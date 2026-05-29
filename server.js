@@ -399,22 +399,104 @@ app.post('/api/confirm-payment', purchaseLimiter, async (req, res) => {
 });
 
 // Check transaction status (polling)
+// Check transaction status (polling) — also auto-verifies pending payments via FLW
 app.get('/api/transaction-status', async (req, res) => {
   try {
     const identifierCode = sanitizeString(req.query.code || '', 30);
     if (!isValidIdentifier(identifierCode)) return res.status(400).json({ error: 'Invalid code' });
 
-    const { data } = await supabase.from('transactions')
-      .select('status, voucher_code, sent')
+    const { data: txn } = await supabase.from('transactions')
+      .select('status, voucher_code, sent, check_count, flw_ref, amount, product_id, site_name')
       .eq('payment_code', identifierCode)
       .single();
 
-    if (!data) return res.status(404).json({ error: 'Not found' });
+    if (!txn) return res.status(404).json({ error: 'Not found' });
 
-    res.json({
-      status: data.status,
-      voucher: data.status === 'completed' ? data.voucher_code : null,
-    });
+    // Always increment check_count
+    await supabase.from('transactions')
+      .update({ check_count: (txn.check_count || 0) + 1 })
+      .eq('payment_code', identifierCode);
+
+    // Already done — return immediately
+    if (txn.status === 'completed' && txn.voucher_code) {
+      return res.json({ status: 'completed', voucher: txn.voucher_code });
+    }
+
+    // If still pending, search FLW for a matching payment by tx_ref
+    if (txn.status === 'pending' || txn.status === 'confirmed') {
+      try {
+        const https = require('https');
+
+        // Search FLW transactions by tx_ref (the identifierCode)
+        const flwSearch = await new Promise((resolve, reject) => {
+          const options = {
+            hostname: 'api.flutterwave.com',
+            path: `/v3/transactions?tx_ref=${encodeURIComponent(identifierCode)}`,
+            method: 'GET',
+            headers: {
+              'Authorization': `Bearer ${process.env.FLW_SECRET_KEY}`,
+              'Content-Type': 'application/json'
+            }
+          };
+          const r = https.request(options, (resp) => {
+            let d = '';
+            resp.on('data', chunk => d += chunk);
+            resp.on('end', () => { try { resolve(JSON.parse(d)); } catch(e) { reject(e); } });
+          });
+          r.on('error', reject);
+          r.end();
+        });
+
+        console.log(`[status-poll] FLW search for ${identifierCode}:`, JSON.stringify(flwSearch?.data?.length), 'results');
+
+        if (flwSearch.status === 'success' && flwSearch.data && flwSearch.data.length > 0) {
+          const flwTxn = flwSearch.data[0];
+          const paidAmount = parseFloat(flwTxn.amount);
+          const expectedAmount = parseFloat(txn.amount);
+          const flwRef = String(flwTxn.id);
+
+          if (flwTxn.status === 'successful') {
+            if (paidAmount < expectedAmount) {
+              await supabase.from('transactions')
+                .update({ status: 'underpaid', flw_ref: flwRef })
+                .eq('payment_code', identifierCode);
+              return res.json({ status: 'underpaid', voucher: null });
+            }
+
+            if (paidAmount > expectedAmount) {
+              await supabase.from('transactions')
+                .update({ status: 'overpaid', flw_ref: flwRef })
+                .eq('payment_code', identifierCode);
+              return res.json({ status: 'overpaid', voucher: null });
+            }
+
+            // Exact match — deliver voucher
+            const voucher = await assignVoucher(txn.product_id, txn.site_name);
+            if (!voucher) {
+              await supabase.from('transactions')
+                .update({ status: 'out_of_stock', flw_ref: flwRef })
+                .eq('payment_code', identifierCode);
+              return res.json({ status: 'out_of_stock', voucher: null });
+            }
+
+            await supabase.from('transactions').update({
+              status: 'completed',
+              voucher_code: voucher,
+              sent: 'delivered',
+              flw_ref: flwRef,
+              delivered_at: new Date().toISOString(),
+            }).eq('payment_code', identifierCode);
+
+            return res.json({ status: 'completed', voucher });
+          }
+        }
+      } catch(e) {
+        console.error('[status-poll] FLW lookup error:', e.message);
+        // Fall through — return current status without delivery
+      }
+    }
+
+    res.json({ status: txn.status, voucher: null });
   } catch(e) {
     res.status(500).json({ error: 'Status check failed' });
   }
