@@ -10,6 +10,7 @@ const rateLimit = require('express-rate-limit');
 const cors = require('cors');
 const path = require('path');
 const { createClient } = require('@supabase/supabase-js');
+const ws = require('ws');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -20,6 +21,9 @@ const PORT = process.env.PORT || 3000;
 const supabase = createClient(
   process.env.SUPABASE_URL,
   process.env.SUPABASE_SERVICE_KEY  // service key — full access, never in browser
+    {
+    realtime: { transport: ws }
+  }
 );
 
 // ============================================
