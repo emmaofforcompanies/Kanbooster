@@ -44,12 +44,16 @@ app.use(helmet({
     scriptSrcAttr: ["'unsafe-inline'"],
     styleSrc: ["'self'", "'unsafe-inline'", "https://fonts.googleapis.com"],
     fontSrc: ["'self'", "https://fonts.gstatic.com"],
-    frameSrc: ["https://checkout.flutterwave.com"],
-    connectSrc: [
-      "'self'",
-      "https://checkout.flutterwave.com",
-      "https://api.flutterwave.com",
-    ],
+    frameSrc: [
+  "https://checkout.flutterwave.com",
+  "https://checkout-v3-ui-prod.f4b-flutterwave.com",
+],
+connectSrc: [
+  "'self'",
+  "https://checkout.flutterwave.com",
+  "https://api.flutterwave.com",
+  "https://api.ravepay.co",
+],
     imgSrc: ["'self'", "data:", "https:"],
   }
   }
