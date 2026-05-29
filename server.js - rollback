@@ -411,13 +411,6 @@ app.get('/api/transaction-status', async (req, res) => {
 
     if (!data) return res.status(404).json({ error: 'Not found' });
 
-    // Increment check_count on every poll (fire-and-forget, don't block response)
-    supabase.from('transactions')
-      .update({ check_count: (data.check_count || 0) + 1 })
-      .eq('payment_code', identifierCode)
-      .then(() => {})
-      .catch(() => {});
-
     res.json({
       status: data.status,
       voucher: data.status === 'completed' ? data.voucher_code : null,
