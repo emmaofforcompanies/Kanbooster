@@ -108,7 +108,7 @@ app.use('/api/', apiLimiter);
 // ============================================
 // SERVE STATIC FILES
 // ============================================
-app.use(express.static(path.join(__dirname, 'public'), {
+app.use(express.static(path.join(__dirname), {
   index: false, // don't auto-serve index
   setHeaders: (res) => {
     res.setHeader('X-Content-Type-Options', 'nosniff');
@@ -748,11 +748,11 @@ async function assignVoucher(productId, siteName) {
 // PAGE ROUTES
 // ============================================
 app.get('/', (req, res) => {
-  res.sendFile(path.join(__dirname, 'public', 'index.html'));
+  res.sendFile(path.join(__dirname, 'index.html'));
 });
 
 app.get('/admin', (req, res) => {
-  res.sendFile(path.join(__dirname, 'public', 'admin.html'));
+  res.sendFile(path.join(__dirname, 'admin.html'));
 });
 
 // 404
