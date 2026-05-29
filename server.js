@@ -20,12 +20,11 @@ const PORT = process.env.PORT || 3000;
 // ============================================
 const supabase = createClient(
   process.env.SUPABASE_URL,
-  process.env.SUPABASE_SERVICE_KEY,  // service key — full access, never in browser
-    {
+  process.env.SUPABASE_SERVICE_KEY,
+  {
     realtime: { transport: ws }
   }
 );
-
 // ============================================
 // SECURITY MIDDLEWARE
 // ============================================
