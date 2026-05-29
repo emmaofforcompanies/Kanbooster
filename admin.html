@@ -1,0 +1,902 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>KanBooster Admin</title>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600;700&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #080c14; --surface: #0f1520; --surface2: #151d2e; --surface3: #1a2540;
+    --border: #1e2d47; --accent: #f97316; --accent2: #fb923c; --blue: #3b82f6;
+    --success: #22c55e; --warning: #eab308; --danger: #ef4444;
+    --text: #e8edf5; --text2: #7a8fab; --text3: #4a5e7a;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: 'DM Sans', sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; }
+
+  #login-screen { min-height: 100vh; display: flex; align-items: center; justify-content: center; }
+  #login-screen::before { content: ''; position: fixed; inset: 0; background: radial-gradient(ellipse 60% 40% at 50% 0%, rgba(249,115,22,0.08) 0%, transparent 60%); pointer-events: none; }
+  .login-box { background: var(--surface); border: 1px solid var(--border); border-radius: 20px; padding: 40px 36px; width: 100%; max-width: 400px; position: relative; z-index: 1; }
+  .login-logo { font-family: 'JetBrains Mono', monospace; font-weight: 700; font-size: 1.4rem; color: var(--accent); margin-bottom: 4px; }
+  .login-sub { font-size: 0.8rem; color: var(--text2); letter-spacing: 2px; text-transform: uppercase; margin-bottom: 32px; }
+  .login-label { font-size: 0.78rem; color: var(--text2); margin-bottom: 6px; display: block; }
+  .login-input { width: 100%; background: var(--surface2); border: 1px solid var(--border); border-radius: 10px; padding: 12px 14px; color: var(--text); font-family: 'DM Sans', sans-serif; font-size: 0.95rem; outline: none; transition: border-color 0.2s; margin-bottom: 16px; }
+  .login-input:focus { border-color: var(--accent); }
+  .login-btn { width: 100%; padding: 13px; background: var(--accent); border: none; border-radius: 10px; color: #fff; font-family: 'JetBrains Mono', monospace; font-weight: 700; font-size: 0.9rem; cursor: pointer; letter-spacing: 1px; transition: all 0.2s; margin-top: 4px; }
+  .login-btn:hover { background: var(--accent2); transform: translateY(-1px); }
+  .login-btn:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
+  .login-error { background: rgba(239,68,68,0.08); border: 1px solid rgba(239,68,68,0.3); color: #fca5a5; border-radius: 8px; padding: 10px 12px; font-size: 0.82rem; margin-bottom: 16px; display: none; }
+
+  #admin-screen { display: none; min-height: 100vh; }
+  .topbar { background: var(--surface); border-bottom: 1px solid var(--border); padding: 0 24px; height: 56px; display: flex; align-items: center; justify-content: space-between; position: sticky; top: 0; z-index: 50; }
+  .topbar-logo { font-family: 'JetBrains Mono', monospace; font-weight: 700; font-size: 1rem; color: var(--accent); }
+  .topbar-right { display: flex; align-items: center; gap: 16px; }
+  .admin-badge { font-size: 0.72rem; background: rgba(249,115,22,0.1); border: 1px solid rgba(249,115,22,0.3); color: var(--accent); padding: 4px 10px; border-radius: 20px; font-family: 'JetBrains Mono', monospace; }
+  .logout-btn { background: transparent; border: 1px solid var(--border); color: var(--text2); padding: 6px 14px; border-radius: 8px; font-size: 0.8rem; cursor: pointer; transition: all 0.2s; }
+  .logout-btn:hover { border-color: var(--danger); color: var(--danger); }
+  .admin-body { display: flex; min-height: calc(100vh - 56px); }
+  .sidebar { width: 220px; background: var(--surface); border-right: 1px solid var(--border); padding: 20px 12px; flex-shrink: 0; position: sticky; top: 56px; height: calc(100vh - 56px); overflow-y: auto; }
+  .nav-section { font-size: 0.65rem; color: var(--text3); letter-spacing: 2px; text-transform: uppercase; padding: 0 8px; margin-bottom: 6px; margin-top: 16px; }
+  .nav-section:first-child { margin-top: 0; }
+  .nav-item { display: flex; align-items: center; gap: 10px; padding: 9px 10px; border-radius: 8px; cursor: pointer; font-size: 0.85rem; color: var(--text2); transition: all 0.15s; margin-bottom: 2px; }
+  .nav-item:hover { background: var(--surface2); color: var(--text); }
+  .nav-item.active { background: rgba(249,115,22,0.1); color: var(--accent); }
+  .nav-icon { font-size: 1rem; width: 20px; text-align: center; }
+  .main-content { flex: 1; padding: 24px; overflow-x: hidden; }
+  .section { display: none; }
+  .section.active { display: block; }
+  .section-title { font-family: 'JetBrains Mono', monospace; font-weight: 700; font-size: 1.1rem; margin-bottom: 20px; color: var(--text); }
+  .card { background: var(--surface); border: 1px solid var(--border); border-radius: 14px; padding: 20px; margin-bottom: 16px; }
+  .card-title { font-family: 'JetBrains Mono', monospace; font-size: 0.7rem; letter-spacing: 2px; text-transform: uppercase; color: var(--accent); margin-bottom: 14px; }
+  .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 12px; margin-bottom: 20px; }
+  .stat-card { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 16px; }
+  .stat-label { font-size: 0.72rem; color: var(--text2); margin-bottom: 8px; text-transform: uppercase; letter-spacing: 1px; }
+  .stat-value { font-family: 'JetBrains Mono', monospace; font-size: 1.6rem; font-weight: 700; color: var(--text); }
+  .stat-sub { font-size: 0.72rem; color: var(--text2); margin-top: 4px; }
+  .stat-card.green .stat-value { color: var(--success); }
+  .stat-card.orange .stat-value { color: var(--accent); }
+  .stat-card.blue .stat-value { color: var(--blue); }
+  .stat-card.red .stat-value { color: var(--danger); }
+  .table-wrap { overflow-x: auto; }
+  table { width: 100%; border-collapse: collapse; font-size: 0.82rem; }
+  th { background: var(--surface2); color: var(--text2); font-family: 'JetBrains Mono', monospace; font-size: 0.68rem; letter-spacing: 1px; text-transform: uppercase; padding: 10px 12px; text-align: left; border-bottom: 1px solid var(--border); }
+  td { padding: 10px 12px; border-bottom: 1px solid var(--border); color: var(--text); vertical-align: middle; }
+  tr:last-child td { border-bottom: none; }
+  tr:hover td { background: var(--surface2); }
+  .badge { display: inline-block; padding: 3px 8px; border-radius: 4px; font-size: 0.7rem; font-family: 'JetBrains Mono', monospace; font-weight: 600; letter-spacing: 0.5px; }
+  .badge-green { background: rgba(34,197,94,0.1); color: #86efac; border: 1px solid rgba(34,197,94,0.2); }
+  .badge-orange { background: rgba(249,115,22,0.1); color: #fdba74; border: 1px solid rgba(249,115,22,0.2); }
+  .badge-blue { background: rgba(59,130,246,0.1); color: #93c5fd; border: 1px solid rgba(59,130,246,0.2); }
+  .badge-red { background: rgba(239,68,68,0.1); color: #fca5a5; border: 1px solid rgba(239,68,68,0.2); }
+  .badge-grey { background: rgba(122,143,171,0.1); color: var(--text2); border: 1px solid rgba(122,143,171,0.2); }
+  .form-label { font-size: 0.78rem; color: var(--text2); margin-bottom: 6px; display: block; }
+  .form-input { width: 100%; background: var(--surface2); border: 1px solid var(--border); border-radius: 8px; padding: 10px 12px; color: var(--text); font-family: 'DM Sans', sans-serif; font-size: 0.9rem; outline: none; transition: border-color 0.2s; margin-bottom: 12px; }
+  .form-input:focus { border-color: var(--accent); }
+  .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+  .form-group { margin-bottom: 4px; }
+  .btn { padding: 9px 18px; border: none; border-radius: 8px; font-family: 'JetBrains Mono', monospace; font-size: 0.78rem; font-weight: 700; cursor: pointer; transition: all 0.2s; letter-spacing: 0.5px; }
+  .btn-primary { background: var(--accent); color: #fff; }
+  .btn-primary:hover { background: var(--accent2); }
+  .btn-primary:disabled { opacity: 0.4; cursor: not-allowed; }
+  .btn-secondary { background: var(--surface3); border: 1px solid var(--border); color: var(--text2); }
+  .btn-secondary:hover { border-color: var(--accent); color: var(--accent); }
+  .btn-danger { background: rgba(239,68,68,0.1); border: 1px solid rgba(239,68,68,0.3); color: #fca5a5; }
+  .btn-success { background: rgba(34,197,94,0.1); border: 1px solid rgba(34,197,94,0.3); color: #86efac; }
+  .btn-success:hover { background: rgba(34,197,94,0.2); }
+  .btn-sm { padding: 5px 10px; font-size: 0.68rem; }
+  .filters { display: flex; gap: 10px; margin-bottom: 16px; flex-wrap: wrap; align-items: center; }
+  .filter-input { background: var(--surface2); border: 1px solid var(--border); border-radius: 8px; padding: 8px 12px; color: var(--text); font-size: 0.85rem; outline: none; }
+  .filter-input:focus { border-color: var(--accent); }
+  .alert { padding: 10px 14px; border-radius: 8px; font-size: 0.82rem; margin-bottom: 14px; }
+  .alert-success { background: rgba(34,197,94,0.08); border: 1px solid rgba(34,197,94,0.25); color: #86efac; }
+  .alert-danger { background: rgba(239,68,68,0.08); border: 1px solid rgba(239,68,68,0.25); color: #fca5a5; }
+  .alert-info { background: rgba(59,130,246,0.08); border: 1px solid rgba(59,130,246,0.25); color: #93c5fd; }
+  .spinner { width: 18px; height: 18px; border: 2px solid rgba(249,115,22,0.2); border-top-color: var(--accent); border-radius: 50%; animation: spin 0.7s linear infinite; display: inline-block; vertical-align: middle; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  .pagination { display: flex; gap: 8px; align-items: center; margin-top: 14px; justify-content: flex-end; }
+  .page-btn { padding: 5px 10px; background: var(--surface2); border: 1px solid var(--border); border-radius: 6px; color: var(--text2); cursor: pointer; font-size: 0.78rem; }
+  .page-btn:hover { border-color: var(--accent); color: var(--accent); }
+  .page-info { font-size: 0.78rem; color: var(--text2); }
+  .settings-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+  .upload-area { border: 2px dashed var(--border); border-radius: 12px; padding: 32px; text-align: center; cursor: pointer; transition: all 0.2s; margin-bottom: 14px; }
+  .upload-area:hover, .upload-area.dragover { border-color: var(--accent); background: rgba(249,115,22,0.03); }
+  #toast { position: fixed; bottom: 24px; right: 24px; background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 12px 18px; font-size: 0.85rem; z-index: 999; transform: translateY(100px); opacity: 0; transition: all 0.3s; max-width: 300px; }
+  #toast.show { transform: translateY(0); opacity: 1; }
+  #toast.success { border-color: rgba(34,197,94,0.4); color: #86efac; }
+  #toast.error { border-color: rgba(239,68,68,0.4); color: #fca5a5; }
+  @media (max-width: 700px) { .settings-grid { grid-template-columns: 1fr; } .form-row { grid-template-columns: 1fr; } .sidebar { display: none; } .stats-grid { grid-template-columns: 1fr 1fr; } }
+</style>
+</head>
+<body>
+
+<!-- LOGIN -->
+<div id="login-screen">
+  <div class="login-box">
+    <div class="login-logo">⚡ KanBooster</div>
+    <div class="login-sub">Admin Portal</div>
+    <div class="login-error" id="login-error"></div>
+    <label class="login-label">Username</label>
+    <input type="text" class="login-input" id="login-username" placeholder="admin username" autocomplete="off">
+    <label class="login-label">Password</label>
+    <input type="password" class="login-input" id="login-password" placeholder="••••••••" onkeydown="if(event.key==='Enter')doLogin()">
+    <button class="login-btn" onclick="doLogin()" id="login-btn">LOGIN →</button>
+  </div>
+</div>
+
+<!-- ADMIN -->
+<div id="admin-screen">
+  <div class="topbar">
+    <div class="topbar-logo">⚡ KanBooster Admin</div>
+    <div class="topbar-right">
+      <span class="admin-badge" id="admin-name-badge">ADMIN</span>
+      <button class="logout-btn" onclick="doLogout()">Logout</button>
+    </div>
+  </div>
+  <div class="admin-body">
+    <div class="sidebar">
+      <div class="nav-section">Overview</div>
+      <div class="nav-item active" onclick="showSection('dashboard')"><span class="nav-icon">📊</span> Dashboard</div>
+      <div class="nav-section">Transactions</div>
+      <div class="nav-item" onclick="showSection('transactions')"><span class="nav-icon">💳</span> All Transactions</div>
+      <div class="nav-item" onclick="showSection('pending')"><span class="nav-icon">⏳</span> Pending / Issues</div>
+      <div class="nav-section">Stock</div>
+      <div class="nav-item" onclick="showSection('stock')"><span class="nav-icon">📦</span> Check Stock</div>
+      <div class="nav-item" onclick="showSection('upload')"><span class="nav-icon">⬆️</span> Upload Codes</div>
+      <div class="nav-section">Products</div>
+      <div class="nav-item" onclick="showSection('products')"><span class="nav-icon">🛒</span> Manage Products</div>
+      <div class="nav-section">Admin</div>
+      <div class="nav-item" onclick="showSection('settings')"><span class="nav-icon">⚙️</span> Settings</div>
+      <div class="nav-item" onclick="showSection('manual-deliver')"><span class="nav-icon">🎟</span> Manual Deliver</div>
+    </div>
+
+    <div class="main-content">
+
+      <!-- DASHBOARD -->
+      <div class="section active" id="section-dashboard">
+        <div class="section-title">Dashboard</div>
+        <div class="filters">
+          <input type="date" class="filter-input" id="dash-from">
+          <input type="date" class="filter-input" id="dash-to">
+          <button class="btn btn-primary" onclick="loadDashboard()">Load</button>
+          <button class="btn btn-secondary" onclick="setDashToday()">Today</button>
+          <button class="btn btn-secondary" onclick="setDashYesterday()">Yesterday</button>
+        </div>
+        <div class="stats-grid">
+          <div class="stat-card green"><div class="stat-label">Total Revenue</div><div class="stat-value" id="stat-revenue">—</div><div class="stat-sub">completed sales</div></div>
+          <div class="stat-card orange"><div class="stat-label">Total Sales</div><div class="stat-value" id="stat-sales">—</div><div class="stat-sub">vouchers delivered</div></div>
+          <div class="stat-card blue"><div class="stat-label">Pending</div><div class="stat-value" id="stat-pending">—</div><div class="stat-sub">awaiting confirmation</div></div>
+          <div class="stat-card red"><div class="stat-label">Issues</div><div class="stat-value" id="stat-issues">—</div><div class="stat-sub">underpaid/overpaid/oos</div></div>
+        </div>
+        <div class="card">
+          <div class="card-title">📈 Sales by Site</div>
+          <div class="table-wrap">
+            <table><thead><tr><th>Site</th><th>Sales</th><th>Revenue</th></tr></thead>
+            <tbody id="dash-site-body"><tr><td colspan="3" style="color:var(--text2); text-align:center;">Select date range and click Load</td></tr></tbody></table>
+          </div>
+        </div>
+      </div>
+
+      <!-- TRANSACTIONS -->
+      <div class="section" id="section-transactions">
+        <div class="section-title">All Transactions</div>
+        <div class="filters">
+          <input type="date" class="filter-input" id="txn-from">
+          <input type="date" class="filter-input" id="txn-to">
+          <select class="filter-input" id="txn-status">
+            <option value="">All Status</option>
+            <option value="completed">Completed</option>
+            <option value="pending">Pending</option>
+            <option value="confirmed">Confirmed</option>
+            <option value="out_of_stock">Out of Stock</option>
+            <option value="underpaid">Underpaid</option>
+            <option value="overpaid">Overpaid</option>
+            <option value="refund">Refund</option>
+          </select>
+          <input type="text" class="filter-input" id="txn-search" placeholder="Search phone/code...">
+          <button class="btn btn-primary" onclick="loadTransactions()">Search</button>
+        </div>
+        <div class="card">
+          <div class="table-wrap">
+            <table>
+              <thead><tr><th>Date</th><th>Phone</th><th>Amount</th><th>Site</th><th>Status</th><th>Voucher</th><th>Source</th></tr></thead>
+              <tbody id="txn-body"><tr><td colspan="7" style="color:var(--text2); text-align:center; padding:20px;">Set filters and click Search</td></tr></tbody>
+            </table>
+          </div>
+          <div class="pagination" id="txn-pagination"></div>
+        </div>
+      </div>
+
+      <!-- PENDING -->
+      <div class="section" id="section-pending">
+        <div class="section-title">Pending & Issues</div>
+        <div class="filters"><button class="btn btn-primary" onclick="loadPending()">🔄 Refresh</button></div>
+        <div class="card">
+          <div class="card-title">⏳ Confirmed but not delivered</div>
+          <div class="table-wrap">
+            <table><thead><tr><th>Date</th><th>Phone</th><th>Amount</th><th>Site</th><th>Code</th><th>Action</th></tr></thead>
+            <tbody id="pending-body"><tr><td colspan="6" style="color:var(--text2); text-align:center;">Click Refresh</td></tr></tbody></table>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-title">⚠️ Issues</div>
+          <div class="table-wrap">
+            <table><thead><tr><th>Date</th><th>Phone</th><th>Amount</th><th>Site</th><th>Status</th><th>Code</th></tr></thead>
+            <tbody id="issues-body"><tr><td colspan="6" style="color:var(--text2); text-align:center;">Click Refresh</td></tr></tbody></table>
+          </div>
+        </div>
+      </div>
+
+      <!-- STOCK -->
+      <div class="section" id="section-stock">
+        <div class="section-title">Stock Levels</div>
+        <div class="filters"><button class="btn btn-primary" onclick="loadStock()">🔄 Refresh Stock</button></div>
+        <div id="stock-content"><div style="color:var(--text2); font-size:0.85rem;">Click Refresh to load.</div></div>
+      </div>
+
+      <!-- UPLOAD -->
+      <div class="section" id="section-upload">
+        <div class="section-title">Upload Voucher Codes</div>
+        <div class="card">
+          <div class="card-title">📥 CSV Template</div>
+          <p style="font-size:0.85rem; color:var(--text2); margin-bottom:14px;">Required columns: <code style="color:var(--accent);">voucher_code, product_id, site_name</code></p>
+          <button class="btn btn-secondary" onclick="downloadTemplate()">⬇ Download Template</button>
+        </div>
+        <div class="card">
+          <div class="card-title">⬆️ Upload CSV</div>
+          <div class="upload-area" id="upload-area" onclick="document.getElementById('csv-file').click()"
+               ondragover="event.preventDefault(); this.classList.add('dragover')"
+               ondragleave="this.classList.remove('dragover')"
+               ondrop="handleDrop(event)">
+            <div style="font-size:2rem; margin-bottom:8px;">📁</div>
+            <div style="font-size:0.9rem; color:var(--text2);">Click or drag & drop your CSV file here</div>
+          </div>
+          <input type="file" id="csv-file" accept=".csv" style="display:none" onchange="handleFileSelect(event)">
+          <div id="upload-preview" style="display:none;">
+            <div id="upload-summary" style="font-size:0.85rem; color:var(--text2); margin-bottom:12px;"></div>
+            <div id="upload-errors" style="display:none;"></div>
+            <button class="btn btn-primary" id="btn-confirm-upload" onclick="confirmUpload()" style="display:none;">✅ Confirm Upload</button>
+          </div>
+          <div id="upload-result" style="display:none;"></div>
+        </div>
+      </div>
+
+      <!-- PRODUCTS -->
+      <div class="section" id="section-products">
+        <div class="section-title">Manage Products</div>
+        <div class="card">
+          <div class="card-title">➕ Create / Edit Product</div>
+          <div class="form-row">
+            <div class="form-group"><label class="form-label">Product Name</label><input type="text" class="form-input" id="prod-name" placeholder="e.g. 1 Day Plan"></div>
+            <div class="form-group"><label class="form-label">Default Price (₦)</label><input type="number" class="form-input" id="prod-price" placeholder="500"></div>
+          </div>
+          <div class="form-row">
+            <div class="form-group"><label class="form-label">Status</label><select class="form-input" id="prod-status"><option value="active">Active</option><option value="inactive">Inactive</option></select></div>
+            <div class="form-group"><label class="form-label">Edit existing (Product ID)</label><input type="number" class="form-input" id="prod-edit-id" placeholder="Leave blank = new"></div>
+          </div>
+          <button class="btn btn-primary" onclick="saveProduct()">Save Product</button>
+        </div>
+        <div class="card">
+          <div class="card-title">📋 All Products</div>
+          <div class="table-wrap">
+            <table><thead><tr><th>ID</th><th>Name</th><th>Price</th><th>Status</th><th>Actions</th></tr></thead>
+            <tbody id="products-body"><tr><td colspan="5" style="color:var(--text2); text-align:center;">Loading...</td></tr></tbody></table>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-title">🌐 Site-Specific Prices</div>
+          <div class="form-row">
+            <div class="form-group"><label class="form-label">Product</label><select class="form-input" id="sp-product-id"></select></div>
+            <div class="form-group"><label class="form-label">Site Name</label><input type="text" class="form-input" id="sp-site" placeholder="e.g. Site1"></div>
+          </div>
+          <div class="form-group"><label class="form-label">Price (₦)</label><input type="number" class="form-input" id="sp-price" placeholder="450"></div>
+          <button class="btn btn-primary" onclick="saveSitePrice()">Save Site Price</button>
+        </div>
+      </div>
+
+      <!-- SETTINGS -->
+      <div class="section" id="section-settings">
+        <div class="section-title">Settings</div>
+        <div class="card">
+          <div class="card-title">⚙️ All Settings</div>
+          <p style="font-size:0.82rem; color:var(--text2); margin-bottom:16px;">Click away or press Enter to save any value.</p>
+          <div id="settings-content"><div style="color:var(--text2);">Loading...</div></div>
+          <div style="margin-top:16px;"><button class="btn btn-primary" onclick="loadSettings()">🔄 Refresh</button></div>
+        </div>
+      </div>
+
+      <!-- MANUAL DELIVER -->
+      <div class="section" id="section-manual-deliver">
+        <div class="section-title">Manual Voucher Delivery</div>
+        <div class="card">
+          <div class="card-title">🎟 Deliver by Identifier Code</div>
+          <p style="font-size:0.82rem; color:var(--text2); margin-bottom:14px;">Manually assign a voucher to a customer who paid but didn't receive their code.</p>
+          <label class="form-label">Identifier Code</label>
+          <input type="text" class="form-input" id="manual-identifier" placeholder="Paste customer identifier code">
+          <button class="btn btn-primary" onclick="lookupManual()">🔍 Lookup Transaction</button>
+          <div id="manual-lookup-result" style="margin-top:14px; display:none;"></div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<div id="toast"></div>
+
+<script>
+const API = '';
+let adminToken = sessionStorage.getItem('kb_admin_token') || null;
+let adminUsername = sessionStorage.getItem('kb_admin_username') || null;
+let uploadRows = [];
+let txnPage = 1;
+const PAGE_SIZE = 50;
+
+// ============================================
+// API HELPERS
+// ============================================
+async function apiGet(endpoint) {
+  const res = await fetch(API + endpoint, {
+    headers: adminToken ? { 'x-admin-token': adminToken } : {}
+  });
+  if (res.status === 401) { doLogout(); throw new Error('Session expired'); }
+  const json = await res.json();
+  if (!res.ok) throw new Error(json.error || 'Request failed');
+  return json;
+}
+
+async function apiPost(endpoint, data) {
+  const res = await fetch(API + endpoint, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      ...(adminToken ? { 'x-admin-token': adminToken } : {})
+    },
+    body: JSON.stringify(data)
+  });
+  if (res.status === 401) { doLogout(); throw new Error('Session expired'); }
+  const json = await res.json();
+  if (!res.ok) throw new Error(json.error || 'Request failed');
+  return json;
+}
+
+// ============================================
+// LOGIN
+// ============================================
+async function doLogin() {
+  const username = document.getElementById('login-username').value.trim();
+  const password = document.getElementById('login-password').value.trim();
+  const btn = document.getElementById('login-btn');
+  const errEl = document.getElementById('login-error');
+
+  if (!username || !password) { showLoginError('Please enter username and password.'); return; }
+
+  btn.disabled = true;
+  btn.textContent = 'Checking...';
+  errEl.style.display = 'none';
+
+  try {
+    const result = await apiPost('/api/admin/login', { username, password });
+    adminToken = result.token;
+    adminUsername = result.username;
+    sessionStorage.setItem('kb_admin_token', adminToken);
+    sessionStorage.setItem('kb_admin_username', adminUsername);
+    document.getElementById('admin-name-badge').textContent = username.toUpperCase();
+    document.getElementById('login-screen').style.display = 'none';
+    document.getElementById('admin-screen').style.display = 'block';
+    loadDashboard();
+    loadProductsTable();
+    loadSettings();
+  } catch(e) {
+    showLoginError(e.message || 'Invalid credentials');
+    btn.disabled = false;
+    btn.textContent = 'LOGIN →';
+  }
+}
+
+function showLoginError(msg) {
+  const el = document.getElementById('login-error');
+  el.textContent = msg;
+  el.style.display = 'block';
+}
+
+async function doLogout() {
+  if (adminToken) {
+    await apiPost('/api/admin/logout', {}).catch(() => {});
+  }
+  adminToken = null;
+  adminUsername = null;
+  sessionStorage.removeItem('kb_admin_token');
+  sessionStorage.removeItem('kb_admin_username');
+  document.getElementById('admin-screen').style.display = 'none';
+  document.getElementById('login-screen').style.display = 'flex';
+  document.getElementById('login-password').value = '';
+  document.getElementById('login-btn').disabled = false;
+  document.getElementById('login-btn').textContent = 'LOGIN →';
+}
+
+// Auto-restore session
+window.onload = () => {
+  const today = new Date().toISOString().split('T')[0];
+  document.getElementById('txn-from').value = today;
+  document.getElementById('txn-to').value = today;
+
+  if (adminToken && adminUsername) {
+    document.getElementById('admin-name-badge').textContent = adminUsername.toUpperCase();
+    document.getElementById('login-screen').style.display = 'none';
+    document.getElementById('admin-screen').style.display = 'block';
+    loadDashboard();
+    loadProductsTable();
+    loadSettings();
+  }
+};
+
+// ============================================
+// NAVIGATION
+// ============================================
+function showSection(name) {
+  document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+  document.getElementById('section-' + name).classList.add('active');
+  document.querySelectorAll('.nav-item').forEach(n => {
+    if (n.getAttribute('onclick') && n.getAttribute('onclick').includes("'" + name + "'")) n.classList.add('active');
+  });
+}
+
+// ============================================
+// DASHBOARD
+// ============================================
+function setDashToday() {
+  const today = new Date().toISOString().split('T')[0];
+  document.getElementById('dash-from').value = today;
+  document.getElementById('dash-to').value = today;
+  loadDashboard();
+}
+
+function setDashYesterday() {
+  const d = new Date(); d.setDate(d.getDate() - 1);
+  const yd = d.toISOString().split('T')[0];
+  document.getElementById('dash-from').value = yd;
+  document.getElementById('dash-to').value = yd;
+  loadDashboard();
+}
+
+async function loadDashboard() {
+  const from = document.getElementById('dash-from').value;
+  const to = document.getElementById('dash-to').value;
+  if (!from || !to) { setDashToday(); return; }
+
+  try {
+    const { data } = await apiGet(`/api/admin/stats?from=${from}&to=${to}`);
+    if (!data) return;
+
+    let revenue = 0, sales = 0, pending = 0, issues = 0;
+    const siteMap = {};
+
+    for (const t of data) {
+      const amt = parseFloat(t.amount || 0);
+      if (t.status === 'completed') {
+        revenue += amt; sales++;
+        const s = (t.site_name || 'unknown').toLowerCase();
+        if (!siteMap[s]) siteMap[s] = { count: 0, revenue: 0 };
+        siteMap[s].count++; siteMap[s].revenue += amt;
+      }
+      if (['pending','confirmed'].includes(t.status)) pending++;
+      if (['underpaid','overpaid','out_of_stock'].includes(t.status)) issues++;
+    }
+
+    document.getElementById('stat-revenue').textContent = '₦' + revenue.toLocaleString();
+    document.getElementById('stat-sales').textContent = sales;
+    document.getElementById('stat-pending').textContent = pending;
+    document.getElementById('stat-issues').textContent = issues;
+
+    const tbody = document.getElementById('dash-site-body');
+    tbody.innerHTML = Object.entries(siteMap).length === 0
+      ? '<tr><td colspan="3" style="color:var(--text2); text-align:center;">No sales in this period</td></tr>'
+      : Object.entries(siteMap).sort((a,b) => b[1].revenue - a[1].revenue)
+          .map(([site, d]) => `<tr><td>${site}</td><td>${d.count}</td><td style="color:var(--success)">₦${d.revenue.toLocaleString()}</td></tr>`).join('');
+  } catch(e) { showToast('❌ Dashboard error: ' + e.message, 'error'); }
+}
+
+// ============================================
+// TRANSACTIONS
+// ============================================
+async function loadTransactions(page = 1) {
+  txnPage = page;
+  const from = document.getElementById('txn-from').value;
+  const to = document.getElementById('txn-to').value;
+  const status = document.getElementById('txn-status').value;
+  const search = document.getElementById('txn-search').value.trim();
+  const tbody = document.getElementById('txn-body');
+  tbody.innerHTML = '<tr><td colspan="7" style="color:var(--text2); text-align:center;"><span class="spinner"></span></td></tr>';
+
+  try {
+    let url = `/api/admin/transactions?page=${page}`;
+    if (from) url += `&from=${from}`;
+    if (to) url += `&to=${to}`;
+    if (status) url += `&status=${encodeURIComponent(status)}`;
+    if (search) url += `&search=${encodeURIComponent(search)}`;
+
+    const { data, count } = await apiGet(url);
+    if (!data || data.length === 0) {
+      tbody.innerHTML = '<tr><td colspan="7" style="color:var(--text2); text-align:center;">No transactions found</td></tr>';
+      document.getElementById('txn-pagination').innerHTML = '';
+      return;
+    }
+
+    tbody.innerHTML = data.map(t => {
+      const date = t.timestamp ? t.timestamp.substring(0,16).replace('T',' ') : 'N/A';
+      const source = t.delivery_method === 'web' ? '<span class="badge badge-blue">WEB</span>' :
+                     t.delivery_method === 'sms' ? '<span class="badge badge-orange">SMS</span>' :
+                     '<span class="badge badge-grey">TG</span>';
+      const voucher = t.voucher_code
+        ? `<span style="font-family:'JetBrains Mono',monospace; font-size:0.75rem; color:var(--success);">${t.voucher_code}</span>`
+        : '<span style="color:var(--text3)">—</span>';
+      return `<tr>
+        <td style="font-size:0.78rem; color:var(--text2);">${date}</td>
+        <td>${t.phone || 'N/A'}</td>
+        <td style="color:var(--accent);">₦${parseFloat(t.amount||0).toLocaleString()}</td>
+        <td style="font-size:0.78rem;">${t.site_name || 'N/A'}</td>
+        <td>${statusToBadge(t.status)}</td>
+        <td>${voucher}</td>
+        <td>${source}</td>
+      </tr>`;
+    }).join('');
+
+    const totalPages = Math.ceil((count||0) / PAGE_SIZE);
+    renderPagination('txn-pagination', page, totalPages, 'loadTransactions');
+  } catch(e) {
+    tbody.innerHTML = `<tr><td colspan="7" style="color:var(--danger);">Error: ${e.message}</td></tr>`;
+  }
+}
+
+function statusToBadge(status) {
+  const map = { completed:'badge-green', pending:'badge-orange', confirmed:'badge-blue', out_of_stock:'badge-red', underpaid:'badge-red', overpaid:'badge-red', refund:'badge-grey', not_confirmed:'badge-grey' };
+  return `<span class="badge ${map[status]||'badge-grey'}">${status}</span>`;
+}
+
+function renderPagination(id, current, total, fn) {
+  const el = document.getElementById(id);
+  if (total <= 1) { el.innerHTML = ''; return; }
+  let html = `<span class="page-info">Page ${current} of ${total}</span>`;
+  if (current > 1) html += `<button class="page-btn" onclick="${fn}(${current-1})">← Prev</button>`;
+  if (current < total) html += `<button class="page-btn" onclick="${fn}(${current+1})">Next →</button>`;
+  el.innerHTML = html;
+}
+
+// ============================================
+// PENDING
+// ============================================
+async function loadPending() {
+  const pb = document.getElementById('pending-body');
+  const ib = document.getElementById('issues-body');
+  pb.innerHTML = ib.innerHTML = '<tr><td colspan="6" style="text-align:center;"><span class="spinner"></span></td></tr>';
+
+  try {
+    const { confirmed, issues } = await apiGet('/api/admin/pending');
+
+    pb.innerHTML = !confirmed || confirmed.length === 0
+      ? '<tr><td colspan="6" style="color:var(--success); text-align:center;">✅ No undelivered transactions</td></tr>'
+      : confirmed.map(t => {
+          const date = t.timestamp ? t.timestamp.substring(0,16).replace('T',' ') : 'N/A';
+          return `<tr>
+            <td style="font-size:0.78rem; color:var(--text2);">${date}</td>
+            <td>${t.phone || 'N/A'}</td>
+            <td style="color:var(--accent);">₦${parseFloat(t.amount||0).toLocaleString()}</td>
+            <td>${t.site_name || 'N/A'}</td>
+            <td style="font-family:'JetBrains Mono',monospace; font-size:0.72rem;">${t.payment_code}</td>
+            <td><button class="btn btn-sm btn-success" onclick="deliverFromPending('${t.payment_code}','${t.product_id}','${t.site_name}')">Deliver</button></td>
+          </tr>`;
+        }).join('');
+
+    ib.innerHTML = !issues || issues.length === 0
+      ? '<tr><td colspan="6" style="color:var(--success); text-align:center;">✅ No issues</td></tr>'
+      : issues.map(t => {
+          const date = t.timestamp ? t.timestamp.substring(0,16).replace('T',' ') : 'N/A';
+          return `<tr>
+            <td style="font-size:0.78rem; color:var(--text2);">${date}</td>
+            <td>${t.phone || 'N/A'}</td>
+            <td style="color:var(--accent);">₦${parseFloat(t.amount||0).toLocaleString()}</td>
+            <td>${t.site_name || 'N/A'}</td>
+            <td>${statusToBadge(t.status)}</td>
+            <td style="font-family:'JetBrains Mono',monospace; font-size:0.72rem;">${t.payment_code}</td>
+          </tr>`;
+        }).join('');
+  } catch(e) { showToast('❌ ' + e.message, 'error'); }
+}
+
+async function deliverFromPending(paymentCode, productId, siteName) {
+  if (!confirm(`Deliver voucher for ${paymentCode}?`)) return;
+  try {
+    const result = await apiPost('/api/admin/deliver', { payment_code: paymentCode, product_id: productId, site_name: siteName });
+    showToast(`✅ Delivered: ${result.voucher}`, 'success');
+    loadPending();
+  } catch(e) { showToast('❌ ' + e.message, 'error'); }
+}
+
+// ============================================
+// STOCK
+// ============================================
+async function loadStock() {
+  const el = document.getElementById('stock-content');
+  el.innerHTML = '<span class="spinner"></span> Loading...';
+  try {
+    const { stock } = await apiGet('/api/admin/stock');
+    if (!stock || stock.length === 0) { el.innerHTML = '<div style="color:var(--text2)">No stock data.</div>'; return; }
+
+    const grouped = {};
+    stock.forEach(s => {
+      if (!grouped[s.product_id]) grouped[s.product_id] = { name: s.product_name, sites: [] };
+      grouped[s.product_id].sites.push(s);
+    });
+
+    el.innerHTML = Object.values(grouped).map(g => `
+      <div class="card">
+        <div class="card-title">🛒 ${g.name}</div>
+        <div class="table-wrap"><table>
+          <thead><tr><th>Site</th><th>Available</th><th>Used</th></tr></thead>
+          <tbody>${g.sites.map(s => `<tr>
+            <td>${s.site}</td>
+            <td style="color:${s.unused <= 5 ? 'var(--danger)' : 'var(--success)'}; font-family:'JetBrains Mono',monospace;">${s.unused}</td>
+            <td style="color:var(--text2);">${s.used}</td>
+          </tr>`).join('')}</tbody>
+        </table></div>
+      </div>`).join('');
+  } catch(e) { el.innerHTML = `<div class="alert alert-danger">Error: ${e.message}</div>`; }
+}
+
+// ============================================
+// UPLOAD
+// ============================================
+function downloadTemplate() {
+  const csv = 'voucher_code,product_id,site_name\nEXAMPLE-001,1,Site1\n';
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(new Blob([csv], { type: 'text/csv' }));
+  a.download = 'codes_template.csv';
+  a.click();
+}
+
+function handleDrop(e) {
+  e.preventDefault();
+  document.getElementById('upload-area').classList.remove('dragover');
+  if (e.dataTransfer.files[0]) processCSV(e.dataTransfer.files[0]);
+}
+
+function handleFileSelect(e) {
+  if (e.target.files[0]) processCSV(e.target.files[0]);
+}
+
+async function processCSV(file) {
+  if (!file.name.endsWith('.csv')) { showToast('❌ Only CSV files allowed', 'error'); return; }
+  const text = await file.text();
+  const lines = text.split('\n').map(l => l.trim()).filter(l => l);
+  if (lines.length < 2) { showToast('❌ CSV is empty', 'error'); return; }
+
+  const headers = lines[0].split(',').map(h => h.trim().toLowerCase());
+  const required = ['voucher_code', 'product_id', 'site_name'];
+  const missing = required.filter(c => !headers.includes(c));
+  if (missing.length > 0) { showToast('❌ Missing: ' + missing.join(', '), 'error'); return; }
+
+  // Get valid products/sites from server
+  const { products } = await apiGet('/api/admin/products');
+  const validIds = new Set(products.map(p => String(p.product_id)));
+
+  uploadRows = [];
+  const errors = [];
+  const seen = new Set();
+
+  for (let i = 1; i < lines.length; i++) {
+    const cols = lines[i].split(',').map(c => c.trim());
+    const row = {};
+    headers.forEach((h, idx) => row[h] = cols[idx] || '');
+
+    if (!row.voucher_code || !row.product_id || !row.site_name) { errors.push(`Row ${i+1}: Empty field`); continue; }
+    if (row.voucher_code.startsWith('EXAMPLE')) { errors.push(`Row ${i+1}: Example row`); continue; }
+    if (!validIds.has(row.product_id)) { errors.push(`Row ${i+1}: Invalid product_id '${row.product_id}'`); continue; }
+    if (seen.has(row.voucher_code)) { errors.push(`Row ${i+1}: Duplicate '${row.voucher_code}'`); continue; }
+    seen.add(row.voucher_code);
+    uploadRows.push({ voucher_code: row.voucher_code, product_id: row.product_id, site_name: row.site_name });
+  }
+
+  const preview = document.getElementById('upload-preview');
+  preview.style.display = 'block';
+  document.getElementById('upload-summary').innerHTML =
+    `<span style="color:var(--success)">✅ ${uploadRows.length} valid codes</span>` +
+    (errors.length > 0 ? ` | <span style="color:var(--danger)">❌ ${errors.length} errors</span>` : '');
+
+  if (errors.length > 0) {
+    const errDiv = document.getElementById('upload-errors');
+    errDiv.style.display = 'block';
+    errDiv.innerHTML = `<div class="alert alert-danger">${errors.slice(0,10).map(e=>`• ${e}`).join('<br>')}</div>`;
+  }
+
+  if (uploadRows.length > 0) {
+    document.getElementById('btn-confirm-upload').style.display = 'inline-block';
+    document.getElementById('btn-confirm-upload').textContent = `✅ Upload ${uploadRows.length} Codes`;
+  }
+}
+
+async function confirmUpload() {
+  if (uploadRows.length === 0) return;
+  const btn = document.getElementById('btn-confirm-upload');
+  btn.disabled = true; btn.textContent = '⏳ Uploading...';
+  try {
+    const result = await apiPost('/api/admin/upload-codes', { codes: uploadRows });
+    document.getElementById('upload-result').style.display = 'block';
+    document.getElementById('upload-result').innerHTML = `<div class="alert alert-success">✅ ${result.uploaded} codes uploaded!</div>`;
+    document.getElementById('upload-preview').style.display = 'none';
+    uploadRows = [];
+    showToast(`✅ ${result.uploaded} codes uploaded!`, 'success');
+  } catch(e) {
+    document.getElementById('upload-result').style.display = 'block';
+    document.getElementById('upload-result').innerHTML = `<div class="alert alert-danger">❌ ${e.message}</div>`;
+    btn.disabled = false; btn.textContent = '✅ Retry Upload';
+  }
+}
+
+// ============================================
+// PRODUCTS
+// ============================================
+async function loadProductsTable() {
+  const tbody = document.getElementById('products-body');
+  try {
+    const { products, site_prices } = await apiGet('/api/admin/products');
+    if (!products || products.length === 0) {
+      tbody.innerHTML = '<tr><td colspan="5" style="color:var(--text2); text-align:center;">No products</td></tr>';
+      return;
+    }
+    tbody.innerHTML = products.map(p => `<tr>
+      <td style="font-family:'JetBrains Mono',monospace;">${p.product_id}</td>
+      <td>${p.name}</td>
+      <td style="color:var(--accent);">₦${parseInt(p.price).toLocaleString()}</td>
+      <td>${p.status === 'active' ? '<span class="badge badge-green">active</span>' : '<span class="badge badge-grey">inactive</span>'}</td>
+      <td><button class="btn btn-sm btn-secondary" onclick="editProduct(${p.product_id},'${p.name}',${p.price},'${p.status}')">Edit</button></td>
+    </tr>`).join('');
+
+    const sel = document.getElementById('sp-product-id');
+    sel.innerHTML = products.map(p => `<option value="${p.product_id}">${p.name}</option>`).join('');
+  } catch(e) { tbody.innerHTML = `<tr><td colspan="5" style="color:var(--danger);">Error: ${e.message}</td></tr>`; }
+}
+
+function editProduct(id, name, price, status) {
+  document.getElementById('prod-edit-id').value = id;
+  document.getElementById('prod-name').value = name;
+  document.getElementById('prod-price').value = price;
+  document.getElementById('prod-status').value = status;
+  showSection('products');
+}
+
+async function saveProduct() {
+  const name = document.getElementById('prod-name').value.trim();
+  const price = document.getElementById('prod-price').value;
+  const status = document.getElementById('prod-status').value;
+  const editId = document.getElementById('prod-edit-id').value.trim();
+  if (!name || !price) { showToast('❌ Fill in name and price', 'error'); return; }
+  try {
+    await apiPost('/api/admin/products', { product_id: editId || null, name, price, status });
+    showToast('✅ Product saved!', 'success');
+    document.getElementById('prod-name').value = '';
+    document.getElementById('prod-price').value = '';
+    document.getElementById('prod-edit-id').value = '';
+    loadProductsTable();
+  } catch(e) { showToast('❌ ' + e.message, 'error'); }
+}
+
+async function saveSitePrice() {
+  const productId = document.getElementById('sp-product-id').value;
+  const siteName = document.getElementById('sp-site').value.trim();
+  const price = document.getElementById('sp-price').value;
+  if (!siteName || !price) { showToast('❌ Fill all fields', 'error'); return; }
+  try {
+    // Use admin products endpoint — reuse server logic
+    await apiPost('/api/admin/products', { site_price: true, product_id: productId, site_name: siteName, price });
+    showToast('✅ Site price saved!', 'success');
+  } catch(e) {
+    // Fallback: direct setting via settings endpoint won't work for site_prices
+    // The server needs a dedicated endpoint — for now show info
+    showToast('⚠️ Use Supabase dashboard to set site prices directly for now', 'error');
+  }
+}
+
+// ============================================
+// SETTINGS
+// ============================================
+async function loadSettings() {
+  const el = document.getElementById('settings-content');
+  try {
+    const { data } = await apiGet('/api/admin/settings');
+    if (!data) return;
+
+    const DESCRIPTIONS = {
+      support_phone: 'Support contact shown to customers',
+      terms_link: 'Terms & Conditions URL',
+      tutorial_link: 'Tutorial video URL',
+      refund_link: 'Refund tutorial URL',
+      flutterwave_link: 'Flutterwave payment link',
+      site_names: 'Comma-separated valid site names',
+      low_stock_threshold: 'Alert when stock falls to this number',
+      auto_check_interval: 'Auto-checker interval (minutes)',
+      max_data_days: 'Delete transactions older than (days)',
+      keep_recent: 'Keep last N days during cleanup',
+      voucher_delivery_alert: 'Alert on voucher delivery (on/off)',
+    };
+
+    el.innerHTML = `<div class="settings-grid">` + data.map(s => `
+      <div style="background:var(--surface2); border:1px solid var(--border); border-radius:10px; padding:14px;">
+        <div style="font-family:'JetBrains Mono',monospace; font-size:0.72rem; color:var(--accent); margin-bottom:4px;">${s.setting_name}</div>
+        <div style="font-size:0.72rem; color:var(--text2); margin-bottom:8px;">${DESCRIPTIONS[s.setting_name] || ''}</div>
+        <input type="text" value="${s.setting_value || ''}"
+          style="width:100%; background:var(--bg); border:1px solid var(--border); border-radius:6px; padding:7px 10px; color:var(--text); font-size:0.85rem; outline:none;"
+          onkeydown="if(event.key==='Enter') saveSetting('${s.setting_name}', this.value, this)"
+          onfocus="this.style.borderColor='var(--accent)'"
+          onblur="this.style.borderColor='var(--border)'; saveSetting('${s.setting_name}', this.value, this)">
+        <div style="font-size:0.68rem; color:var(--text3); margin-top:4px;">Enter or click away to save</div>
+      </div>`).join('') + `</div>`;
+  } catch(e) { el.innerHTML = `<div class="alert alert-danger">Error: ${e.message}</div>`; }
+}
+
+async function saveSetting(name, value, inputEl) {
+  try {
+    await apiPost('/api/admin/settings', { name, value });
+    if (inputEl) { inputEl.style.borderColor = 'var(--success)'; setTimeout(() => { if (inputEl) inputEl.style.borderColor = 'var(--border)'; }, 1000); }
+  } catch(e) { showToast('❌ Save failed: ' + e.message, 'error'); }
+}
+
+// ============================================
+// MANUAL DELIVER
+// ============================================
+async function lookupManual() {
+  const code = document.getElementById('manual-identifier').value.trim();
+  if (!code) { showToast('❌ Enter an identifier code', 'error'); return; }
+
+  const resultEl = document.getElementById('manual-lookup-result');
+  resultEl.style.display = 'block';
+  resultEl.innerHTML = '<span class="spinner"></span> Looking up...';
+
+  try {
+    const { data } = await apiGet(`/api/admin/transactions?search=${encodeURIComponent(code)}`);
+    const txn = data && data.find(t => t.payment_code === code);
+
+    if (!txn) {
+      resultEl.innerHTML = `<div class="alert alert-danger">❌ Transaction not found for: ${code}</div>`;
+      return;
+    }
+
+    const date = txn.timestamp ? txn.timestamp.substring(0,16).replace('T',' ') : 'N/A';
+    resultEl.innerHTML = `
+      <div class="card">
+        <div class="card-title">Transaction Details</div>
+        <table style="width:100%; font-size:0.85rem;">
+          <tr><td style="color:var(--text2); padding:4px 0;">Date</td><td>${date}</td></tr>
+          <tr><td style="color:var(--text2); padding:4px 0;">Phone</td><td>${txn.phone || 'N/A'}</td></tr>
+          <tr><td style="color:var(--text2); padding:4px 0;">Amount</td><td style="color:var(--accent);">₦${parseFloat(txn.amount||0).toLocaleString()}</td></tr>
+          <tr><td style="color:var(--text2); padding:4px 0;">Site</td><td>${txn.site_name || 'N/A'}</td></tr>
+          <tr><td style="color:var(--text2); padding:4px 0;">Status</td><td>${statusToBadge(txn.status)}</td></tr>
+          <tr><td style="color:var(--text2); padding:4px 0;">Voucher</td><td style="font-family:'JetBrains Mono',monospace; color:var(--success);">${txn.voucher_code || 'Not assigned'}</td></tr>
+        </table>
+        ${txn.status !== 'completed' ? `
+          <div style="margin-top:14px;">
+            <button class="btn btn-success" onclick="forceDeliver('${code}','${txn.product_id}','${txn.site_name}')">🎟 Force Deliver Voucher</button>
+          </div>` : `<div class="alert alert-success" style="margin-top:14px; margin-bottom:0;">✅ Already delivered: ${txn.voucher_code}</div>`}
+      </div>`;
+  } catch(e) { resultEl.innerHTML = `<div class="alert alert-danger">Error: ${e.message}</div>`; }
+}
+
+async function forceDeliver(paymentCode, productId, siteName) {
+  if (!confirm(`Force deliver for ${paymentCode}?`)) return;
+  await deliverFromPending(paymentCode, productId, siteName);
+  lookupManual();
+}
+
+// ============================================
+// TOAST
+// ============================================
+function showToast(msg, type = 'success') {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.className = `show ${type}`;
+  setTimeout(() => { t.classList.remove('show'); }, 3000);
+}
+</script>
+</body>
+</html>

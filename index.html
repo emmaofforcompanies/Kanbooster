@@ -1,0 +1,803 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>KanBooster — WiFi Vouchers</title>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<script src="https://checkout.flutterwave.com/v3.js"></script>
+<style>
+  :root {
+    --bg: #0a0e1a;
+    --surface: #111827;
+    --surface2: #1a2236;
+    --border: #1f2d45;
+    --accent: #00d4ff;
+    --accent2: #7c3aed;
+    --success: #10b981;
+    --warning: #f59e0b;
+    --danger: #ef4444;
+    --text: #f0f4ff;
+    --text2: #8899bb;
+    --glow: 0 0 30px rgba(0,212,255,0.15);
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: 'DM Sans', sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; overflow-x: hidden; }
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background:
+      radial-gradient(ellipse 80% 50% at 20% 0%, rgba(0,212,255,0.07) 0%, transparent 60%),
+      radial-gradient(ellipse 60% 40% at 80% 100%, rgba(124,58,237,0.07) 0%, transparent 60%);
+    pointer-events: none;
+    z-index: 0;
+  }
+  .container { max-width: 520px; margin: 0 auto; padding: 24px 16px 60px; position: relative; z-index: 1; }
+  .header { text-align: center; padding: 32px 0 28px; }
+  .logo {
+    font-family: 'Syne', sans-serif; font-weight: 800; font-size: 2rem; letter-spacing: -0.5px;
+    background: linear-gradient(135deg, var(--accent), var(--accent2));
+    -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
+  }
+  .logo-sub { font-size: 0.8rem; color: var(--text2); letter-spacing: 3px; text-transform: uppercase; margin-top: 4px; }
+  .signal-bars { display: flex; justify-content: center; gap: 4px; margin: 12px 0; align-items: flex-end; height: 20px; }
+  .signal-bars span { width: 5px; background: var(--accent); border-radius: 2px; opacity: 0.3; animation: pulse-bar 1.5s ease-in-out infinite; }
+  .signal-bars span:nth-child(1) { height: 6px; animation-delay: 0s; }
+  .signal-bars span:nth-child(2) { height: 10px; animation-delay: 0.15s; }
+  .signal-bars span:nth-child(3) { height: 14px; animation-delay: 0.3s; }
+  .signal-bars span:nth-child(4) { height: 18px; animation-delay: 0.45s; }
+  .signal-bars span:nth-child(5) { height: 20px; animation-delay: 0.6s; }
+  @keyframes pulse-bar { 0%, 100% { opacity: 0.3; } 50% { opacity: 1; } }
+  .card { background: var(--surface); border: 1px solid var(--border); border-radius: 16px; padding: 24px; margin-bottom: 16px; box-shadow: var(--glow); }
+  .card-title { font-family: 'Syne', sans-serif; font-weight: 700; font-size: 0.75rem; letter-spacing: 2px; text-transform: uppercase; color: var(--accent); margin-bottom: 16px; }
+  .steps { display: flex; justify-content: center; gap: 8px; margin-bottom: 24px; }
+  .step { width: 32px; height: 4px; border-radius: 2px; background: var(--border); transition: background 0.3s; }
+  .step.active { background: var(--accent); }
+  .step.done { background: var(--success); }
+  label { display: block; font-size: 0.78rem; color: var(--text2); margin-bottom: 6px; letter-spacing: 0.5px; }
+  input, select {
+    width: 100%; background: var(--surface2); border: 1px solid var(--border); border-radius: 10px;
+    padding: 12px 14px; color: var(--text); font-family: 'DM Sans', sans-serif; font-size: 0.95rem;
+    outline: none; transition: border-color 0.2s, box-shadow 0.2s; margin-bottom: 14px; appearance: none;
+  }
+  input:focus, select:focus { border-color: var(--accent); box-shadow: 0 0 0 3px rgba(0,212,255,0.1); }
+  .products-grid { display: flex; flex-direction: column; gap: 10px; margin-bottom: 14px; }
+  .product-card {
+    background: var(--surface2); border: 2px solid var(--border); border-radius: 12px;
+    padding: 14px 16px; cursor: pointer; transition: all 0.2s;
+    display: flex; justify-content: space-between; align-items: center;
+  }
+  .product-card:hover { border-color: var(--accent); background: rgba(0,212,255,0.05); }
+  .product-card.selected { border-color: var(--accent); background: rgba(0,212,255,0.08); box-shadow: 0 0 20px rgba(0,212,255,0.1); }
+  .product-name { font-family: 'Syne', sans-serif; font-weight: 600; font-size: 0.95rem; }
+  .product-price { font-family: 'Syne', sans-serif; font-weight: 700; font-size: 1.1rem; color: var(--accent); }
+  .btn { width: 100%; padding: 14px; border: none; border-radius: 12px; font-family: 'Syne', sans-serif; font-weight: 700; font-size: 0.95rem; cursor: pointer; transition: all 0.2s; letter-spacing: 0.5px; }
+  .btn-primary { background: linear-gradient(135deg, var(--accent), #0099bb); color: #000; }
+  .btn-primary:hover { transform: translateY(-1px); box-shadow: 0 8px 24px rgba(0,212,255,0.3); }
+  .btn-primary:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
+  .btn-secondary { background: transparent; border: 1px solid var(--border); color: var(--text2); margin-top: 8px; }
+  .btn-secondary:hover { border-color: var(--accent); color: var(--accent); }
+  .btn-success { background: linear-gradient(135deg, var(--success), #059669); color: #fff; }
+  .btn-ghost { background: transparent; border: 1px solid rgba(0,212,255,0.2); color: var(--accent); margin-top: 8px; font-size: 0.85rem; padding: 10px; }
+  .btn-ghost:hover { background: rgba(0,212,255,0.05); border-color: var(--accent); }
+  .voucher-display { text-align: center; padding: 8px 0; }
+  .voucher-label { font-size: 0.72rem; color: var(--text2); letter-spacing: 2px; text-transform: uppercase; margin-bottom: 12px; }
+  .voucher-code {
+    font-family: 'Syne', sans-serif; font-size: 1.8rem; font-weight: 800;
+    background: linear-gradient(135deg, var(--accent), var(--accent2));
+    -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
+    letter-spacing: 2px; word-break: break-all; margin-bottom: 12px;
+  }
+  .voucher-copy-btn {
+    background: rgba(0,212,255,0.1); border: 1px solid var(--accent); color: var(--accent);
+    border-radius: 8px; padding: 8px 20px; font-family: 'Syne', sans-serif; font-size: 0.8rem;
+    font-weight: 700; cursor: pointer; letter-spacing: 1px; transition: all 0.2s;
+  }
+  .voucher-copy-btn:hover { background: rgba(0,212,255,0.2); }
+  .alert { padding: 12px 14px; border-radius: 10px; font-size: 0.85rem; margin-bottom: 14px; line-height: 1.5; }
+  .alert-warning { background: rgba(245,158,11,0.08); border: 1px solid rgba(245,158,11,0.25); color: #fcd34d; }
+  .alert-info { background: rgba(0,212,255,0.06); border: 1px solid rgba(0,212,255,0.2); color: #67e8f9; }
+  .alert-success { background: rgba(16,185,129,0.08); border: 1px solid rgba(16,185,129,0.25); color: #6ee7b7; }
+  .tabs { display: flex; background: var(--surface2); border-radius: 12px; padding: 4px; margin-bottom: 20px; gap: 4px; }
+  .tab { flex: 1; padding: 10px; border: none; border-radius: 9px; background: transparent; color: var(--text2); font-family: 'Syne', sans-serif; font-size: 0.8rem; font-weight: 700; cursor: pointer; transition: all 0.2s; letter-spacing: 0.5px; }
+  .tab.active { background: var(--surface); color: var(--accent); box-shadow: 0 2px 8px rgba(0,0,0,0.3); }
+  .instructions { font-size: 0.82rem; color: var(--text2); line-height: 1.7; }
+  .instructions li { padding: 3px 0; padding-left: 4px; }
+  .instructions li::marker { color: var(--accent); }
+  .divider { height: 1px; background: var(--border); margin: 16px 0; }
+  .page { display: none; }
+  .page.active { display: block; }
+  .success-icon {
+    width: 60px; height: 60px; background: rgba(16,185,129,0.1); border: 2px solid var(--success);
+    border-radius: 50%; display: flex; align-items: center; justify-content: center;
+    font-size: 1.6rem; margin: 0 auto 16px;
+    animation: pop-in 0.4s cubic-bezier(0.34,1.56,0.64,1);
+  }
+  @keyframes pop-in { from { transform: scale(0); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+  #loading-overlay {
+    display: none; position: fixed; inset: 0; background: rgba(10,14,26,0.85);
+    z-index: 100; align-items: center; justify-content: center; flex-direction: column; gap: 16px;
+  }
+  #loading-overlay.show { display: flex; }
+  .loading-spinner { width: 40px; height: 40px; border: 3px solid rgba(0,212,255,0.2); border-top-color: var(--accent); border-radius: 50%; animation: spin 0.8s linear infinite; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  .loading-text { color: var(--text2); font-size: 0.85rem; }
+  .footer { text-align: center; color: var(--text2); font-size: 0.75rem; padding-top: 8px; }
+  @media (max-width: 400px) { .voucher-code { font-size: 1.4rem; } .logo { font-size: 1.7rem; } }
+  @keyframes flicker { 0%, 100% { opacity: 1; } 50% { opacity: 0.6; } }
+  .flicker { animation: flicker 2s ease-in-out infinite; }
+
+  /* Waiting card */
+  .waiting-card { text-align: center; padding: 20px 0 8px; }
+  .waiting-spinner { width: 48px; height: 48px; border: 3px solid rgba(0,212,255,0.15); border-top-color: var(--accent); border-radius: 50%; animation: spin 1s linear infinite; margin: 0 auto 16px; }
+  .waiting-title { font-family: 'Syne', sans-serif; font-weight: 700; font-size: 1rem; margin-bottom: 8px; }
+  .waiting-sub { font-size: 0.82rem; color: var(--text2); line-height: 1.6; }
+
+  /* Review stars */
+  .review-stars { color: #fbbf24; font-size: 1.3rem; letter-spacing: 2px; margin-bottom: 6px; }
+
+  /* Review link card */
+  .review-card {
+    background: linear-gradient(135deg, rgba(251,191,36,0.05), rgba(0,212,255,0.05));
+    border: 1px solid rgba(251,191,36,0.2);
+  }
+</style>
+</head>
+<body>
+
+<div id="loading-overlay">
+  <div class="loading-spinner"></div>
+  <div class="loading-text" id="loading-text">Loading...</div>
+</div>
+
+<div class="container">
+  <div class="header">
+    <div class="logo">KanBooster</div>
+    <div class="logo-sub">WiFi Voucher Store</div>
+    <div class="signal-bars">
+      <span></span><span></span><span></span><span></span><span></span>
+    </div>
+  </div>
+
+  <div class="tabs">
+    <button class="tab active" onclick="switchTab('buy')">Buy Voucher</button>
+    <button class="tab" onclick="switchTab('retrieve')">Retrieve Code</button>
+  </div>
+
+  <!-- BUY FLOW -->
+  <div id="tab-buy" class="page active">
+    <div class="steps">
+      <div class="step active" id="step-1"></div>
+      <div class="step" id="step-2"></div>
+      <div class="step" id="step-3"></div>
+      <div class="step" id="step-4"></div>
+    </div>
+
+    <!-- Page 1: Products -->
+    <div id="page-1" class="page active">
+      <div class="card">
+        <div class="card-title">📶 Select Your Plan</div>
+        <div id="products-loading" style="text-align:center; color:var(--text2); padding:20px 0; font-size:0.85rem;">
+          <span class="flicker">Loading available plans...</span>
+        </div>
+        <div id="products-grid" class="products-grid" style="display:none;"></div>
+        <div id="no-products" style="display:none; text-align:center; color:var(--text2); padding:20px 0; font-size:0.85rem;">
+          No plans available right now. Please try again later.
+        </div>
+        <button class="btn btn-primary" id="btn-select-product" onclick="goToPage2()" disabled>Continue →</button>
+      </div>
+      <div class="card">
+        <div class="card-title">ℹ️ How It Works</div>
+        <ol class="instructions">
+          <li>Select your preferred WiFi plan</li>
+          <li>Enter your phone number and site name</li>
+          <li>Complete payment — all fields auto-filled</li>
+          <li>Your voucher code appears instantly on screen</li>
+        </ol>
+      </div>
+    </div>
+
+    <!-- Page 2: Phone + Site -->
+    <div id="page-2" class="page">
+      <div class="card">
+        <div class="card-title">📞 Your Details</div>
+        <label>Phone Number</label>
+        <input type="tel" id="phone-input" placeholder="e.g. 08012345678" maxlength="11">
+        <label>Site Name</label>
+        <input type="text" id="site-input" placeholder="Enter your site name">
+        <div id="site-error" style="display:none; color:var(--danger); font-size:0.8rem; margin-top:-10px; margin-bottom:10px;"></div>
+        <button class="btn btn-primary" onclick="goToPage3()">Continue →</button>
+        <button class="btn btn-secondary" onclick="goToPage1()">← Back</button>
+      </div>
+    </div>
+
+    <!-- Page 3: Payment / Waiting -->
+    <div id="page-3" class="page">
+      <!-- Summary card (shown before payment) -->
+      <div class="card" id="payment-summary-card">
+        <div class="card-title">💳 Order Summary</div>
+        <div style="margin-bottom:14px;">
+          <div style="display:flex; justify-content:space-between; font-size:0.85rem; color:var(--text2); margin-bottom:8px;">
+            <span>Plan</span><span id="summary-plan" style="color:var(--text);">—</span>
+          </div>
+          <div style="display:flex; justify-content:space-between; font-size:0.85rem; color:var(--text2); margin-bottom:8px;">
+            <span>Site</span><span id="summary-site" style="color:var(--text);">—</span>
+          </div>
+          <div style="display:flex; justify-content:space-between; font-size:0.95rem; font-weight:600;">
+            <span>Amount</span><span id="summary-amount" style="color:var(--accent);">—</span>
+          </div>
+        </div>
+        <button class="btn btn-primary" onclick="openPayment()" id="btn-pay">🔐 Pay Now</button>
+        <button class="btn btn-secondary" onclick="goToPage2()">← Back</button>
+      </div>
+
+      <!-- Waiting card (shown after payment initiated) -->
+      <div class="card" id="waiting-card" style="display:none;">
+        <div class="waiting-card">
+          <div class="waiting-spinner"></div>
+          <div class="waiting-title">Processing your payment...</div>
+          <div class="waiting-sub">
+            Your voucher code will appear here automatically.<br>
+            This usually takes less than 30 seconds.<br><br>
+            📞 No code after <strong id="support-wait-mins">10</strong> mins?
+            Contact support: <strong id="support-phone-display"></strong>
+          </div>
+        </div>
+        <div style="margin-top:20px; display:flex; flex-direction:column; gap:8px;">
+          <button class="btn btn-success" onclick="checkPayment()" id="btn-check-payment">
+            ✅ I've Paid — Check Now
+          </button>
+          <button class="btn btn-ghost" onclick="resetBuy()">
+            ← Buy a Different Plan
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Page 4: Voucher Delivered -->
+    <div id="page-4" class="page">
+      <div class="card">
+        <div class="voucher-display">
+          <div class="success-icon">🎉</div>
+          <div class="voucher-label">Your WiFi Voucher Code</div>
+          <div class="voucher-code" id="voucher-display">—</div>
+          <button class="voucher-copy-btn" onclick="copyVoucher()">📋 COPY CODE</button>
+        </div>
+        <div class="divider"></div>
+        <div class="alert alert-info" style="margin-bottom:0;">
+          📡 Connect to the WiFi → Enter password <strong>kanbooster</strong> (all lowercase) → You'll be redirected to enter your voucher code.
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-title">📲 Track Your Data</div>
+        <p class="instructions" style="list-style:none; line-height:1.8;">
+          🤖 Android: Download <strong>GlassWire</strong> on Play Store<br>
+          🍎 iOS: Download <strong>My Data Manager</strong> on App Store
+        </p>
+      </div>
+
+      <!-- Review card -->
+      <div class="card review-card">
+        <div class="card-title">⭐ Enjoying KanBooster?</div>
+        <div class="review-stars">★★★★★</div>
+        <p style="font-size:0.85rem; color:var(--text2); margin-bottom:14px; line-height:1.6;">
+          If our service was fast and smooth, please take 30 seconds to leave us a review. It helps us serve more customers like you!
+        </p>
+        <a href="https://g.page/r/afri-eo/review" target="_blank" rel="noopener noreferrer"
+           style="display:block; width:100%; padding:12px; background:linear-gradient(135deg,#fbbf24,#f59e0b); border:none; border-radius:12px; color:#000; font-family:'Syne',sans-serif; font-weight:700; font-size:0.9rem; text-align:center; text-decoration:none; transition:all 0.2s; letter-spacing:0.5px;"
+           onmouseover="this.style.transform='translateY(-1px)'"
+           onmouseout="this.style.transform='translateY(0)'">
+          ⭐ Leave a Review for Afri-EO
+        </a>
+      </div>
+
+      <button class="btn btn-secondary" onclick="resetBuy()" style="margin-top:4px;">Buy Another Voucher</button>
+    </div>
+  </div>
+
+  <!-- RETRIEVE FLOW -->
+  <div id="tab-retrieve" class="page">
+    <div class="card">
+      <div class="card-title">🔍 Retrieve Your Code</div>
+      <div class="alert alert-info">
+        You can only retrieve vouchers purchased within the last <strong>48 hours</strong> from this same device.
+      </div>
+      <label>Phone Number Used During Purchase</label>
+      <input type="tel" id="retrieve-phone" placeholder="e.g. 08012345678" maxlength="11">
+      <button class="btn btn-primary" onclick="retrieveCode()">Find My Voucher →</button>
+    </div>
+    <div id="retrieve-result" style="display:none;"></div>
+  </div>
+
+  <div class="footer">
+    Powered by KanBooster &nbsp;•&nbsp; Secure payments by Flutterwave
+  </div>
+</div>
+
+<script>
+// ============================================
+// ALL API CALLS GO TO YOUR SERVER — NO KEYS HERE
+// ============================================
+const API = ''; // empty = same origin (your VPS)
+const SUPPORT_PHONE = ''; // loaded from server
+
+let selectedProduct = null;
+let identifierCode = null;
+let currentPhone = null;
+let currentSite = null;
+let flwPublicKey = null;
+let deviceId = getDeviceId();
+let autoCheckTimer = null;
+let settings = {};
+
+// ============================================
+// DEVICE FINGERPRINT
+// ============================================
+function getDeviceId() {
+  let id = localStorage.getItem('kb_device_id');
+  if (!id) {
+    id = 'dev_' + Date.now().toString(36) + '_' +
+         Math.random().toString(36).substr(2, 9) + '_' +
+         (navigator.userAgent.length * 7).toString(36) + '_' +
+         (screen.width * screen.height).toString(36);
+    localStorage.setItem('kb_device_id', id);
+  }
+  return id;
+}
+
+function generateIdentifier() {
+  const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
+  let result = '';
+  for (let i = 0; i < 20; i++) result += chars.charAt(Math.floor(Math.random() * chars.length));
+  return result;
+}
+
+// ============================================
+// API HELPERS
+// ============================================
+async function apiGet(endpoint) {
+  const res = await fetch(API + endpoint);
+  if (!res.ok) throw new Error(await res.text());
+  return res.json();
+}
+
+async function apiPost(endpoint, data) {
+  const res = await fetch(API + endpoint, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(data),
+  });
+  const json = await res.json();
+  if (!res.ok) throw new Error(json.error || 'Request failed');
+  return json;
+}
+
+// ============================================
+// LOAD PRODUCTS
+// ============================================
+async function loadProducts() {
+  try {
+    document.getElementById('products-loading').style.display = 'block';
+    document.getElementById('products-grid').style.display = 'none';
+    document.getElementById('no-products').style.display = 'none';
+
+    const { products } = await apiGet('/api/products');
+
+    if (!products || products.length === 0) {
+      document.getElementById('products-loading').style.display = 'none';
+      document.getElementById('no-products').style.display = 'block';
+      return;
+    }
+
+    const grid = document.getElementById('products-grid');
+    grid.innerHTML = '';
+    products.forEach(p => {
+      const card = document.createElement('div');
+      card.className = 'product-card';
+      card.innerHTML = `
+        <div>
+          <div class="product-name">${p.name}</div>
+          <div style="font-size:0.75rem; color:var(--success); margin-top:2px;">✅ Available</div>
+        </div>
+        <div class="product-price">₦${parseInt(p.price).toLocaleString()}</div>
+      `;
+      card.onclick = () => {
+        document.querySelectorAll('.product-card').forEach(c => c.classList.remove('selected'));
+        card.classList.add('selected');
+        selectedProduct = { id: p.product_id, name: p.name, price: parseInt(p.price) };
+        document.getElementById('btn-select-product').disabled = false;
+      };
+      grid.appendChild(card);
+    });
+
+    document.getElementById('products-loading').style.display = 'none';
+    grid.style.display = 'flex';
+  } catch(e) {
+    document.getElementById('products-loading').innerHTML = '<span style="color:var(--danger)">Error loading plans. Please refresh.</span>';
+  }
+}
+
+// ============================================
+// NAVIGATION
+// ============================================
+function goToPage1() {
+  showPage('page-1');
+  setStep(1);
+  loadProducts();
+}
+
+function goToPage2() {
+  if (!selectedProduct) return;
+  showPage('page-2');
+  setStep(2);
+}
+
+async function goToPage3() {
+  const phone = document.getElementById('phone-input').value.trim();
+  const siteName = document.getElementById('site-input').value.trim();
+
+  if (!phone || phone.length < 10) { alert('Please enter a valid phone number.'); return; }
+  if (!siteName) {
+    document.getElementById('site-error').textContent = 'Please enter your site name.';
+    document.getElementById('site-error').style.display = 'block';
+    return;
+  }
+
+  showLoading('Validating...');
+
+  try {
+    // Validate site via server
+    const { valid } = await apiPost('/api/validate-site', { site_name: siteName });
+    if (!valid) {
+      hideLoading();
+      document.getElementById('site-error').textContent = 'Invalid site name. Please check and try again.';
+      document.getElementById('site-error').style.display = 'block';
+      return;
+    }
+    document.getElementById('site-error').style.display = 'none';
+
+    // Check stock via server
+    const { in_stock } = await apiPost('/api/check-stock', {
+      product_id: selectedProduct.id,
+      site_name: siteName,
+    });
+    if (!in_stock) {
+      hideLoading();
+      alert(`Sorry, ${selectedProduct.name} is currently out of stock for ${siteName}. Please try again later.`);
+      return;
+    }
+
+    // Create transaction via server
+    identifierCode = generateIdentifier();
+    currentPhone = phone;
+    currentSite = siteName.replace(/\s+/g, '').toLowerCase();
+
+    const result = await apiPost('/api/create-transaction', {
+      phone,
+      site_name: siteName,
+      product_id: selectedProduct.id,
+      identifier_code: identifierCode,
+      device_id: deviceId,
+    });
+
+    // Server returns FLW public key and final price
+    flwPublicKey = result.flw_public_key;
+    selectedProduct.price = result.amount;
+    selectedProduct.name = result.product_name;
+
+    localStorage.setItem('kb_last_identifier', identifierCode);
+    localStorage.setItem('kb_last_phone', phone);
+
+    hideLoading();
+
+    // Update summary
+    document.getElementById('summary-plan').textContent = selectedProduct.name;
+    document.getElementById('summary-site').textContent = siteName;
+    document.getElementById('summary-amount').textContent = `₦${selectedProduct.price.toLocaleString()}`;
+
+    showPage('page-3');
+    setStep(3);
+
+    // Auto open payment
+    openPayment();
+
+  } catch(e) {
+    hideLoading();
+    console.error('goToPage3 error:', e);
+    alert('Error: ' + e.message);
+  }
+}
+
+// ============================================
+// OPEN FLUTTERWAVE
+// ============================================
+function openPayment() {
+  const phone = currentPhone || document.getElementById('phone-input').value.trim();
+  const siteName = document.getElementById('site-input').value.trim();
+
+  try {
+    FlutterwaveCheckout({
+      public_key: flwPublicKey,
+      tx_ref: identifierCode,
+      amount: selectedProduct.price,
+      currency: 'NGN',
+      payment_options: 'card, banktransfer, ussd',
+      customer: {
+        phone_number: phone,
+        name: 'N/A',
+        email: 'dontfill@none.com',
+      },
+      meta: {
+        identifier_password: identifierCode,
+        'Phone Number': phone,
+        site_name: siteName,
+      },
+      customizations: {
+        title: 'KanBooster WiFi',
+        description: selectedProduct.name,
+      },
+      callback: async function(response) {
+        console.log('FLW callback:', response);
+        if (response.status === 'successful' || response.status === 'completed') {
+          document.getElementById('payment-summary-card').style.display = 'none';
+          document.getElementById('waiting-card').style.display = 'block';
+
+          try {
+            const result = await apiPost('/api/confirm-payment', {
+              identifier_code: identifierCode,
+              flw_ref: response.flw_ref || response.transaction_id || '',
+              tx_ref: response.tx_ref || identifierCode,
+            });
+
+            if (result.success && result.voucher) {
+              if (autoCheckTimer) clearInterval(autoCheckTimer);
+              saveVoucherLocally(result.voucher);
+              showVoucher(result.voucher);
+            } else {
+              startAutoCheck();
+            }
+          } catch(e) {
+            console.error('confirm-payment error:', e);
+            startAutoCheck();
+          }
+        }
+      },
+      onclose: function() {
+        document.getElementById('payment-summary-card').style.display = 'none';
+        document.getElementById('waiting-card').style.display = 'block';
+        startAutoCheck();
+      }
+    });
+  } catch(e) {
+    console.error('FLW error:', e);
+    alert('Payment error: ' + e.message);
+  }
+}
+
+// ============================================
+// CHECK PAYMENT (manual)
+// ============================================
+async function checkPayment() {
+  const btn = document.getElementById('btn-check-payment');
+  btn.disabled = true;
+  btn.textContent = '⏳ Checking...';
+
+  try {
+    const result = await apiGet(`/api/transaction-status?code=${encodeURIComponent(identifierCode)}`);
+
+    if (result.status === 'completed' && result.voucher) {
+      if (autoCheckTimer) clearInterval(autoCheckTimer);
+      saveVoucherLocally(result.voucher);
+      showVoucher(result.voucher);
+      return;
+    }
+
+    if (result.status === 'confirmed') {
+      // Try to deliver now
+      try {
+        const deliver = await apiPost('/api/confirm-payment', {
+          identifier_code: identifierCode,
+          flw_ref: '',
+          tx_ref: identifierCode,
+        });
+        if (deliver.success && deliver.voucher) {
+          if (autoCheckTimer) clearInterval(autoCheckTimer);
+          saveVoucherLocally(deliver.voucher);
+          showVoucher(deliver.voucher);
+          return;
+        }
+      } catch(e) { /* will retry */ }
+    }
+
+    if (result.status === 'underpaid') {
+      btn.disabled = false;
+      btn.textContent = '✅ I\'ve Paid — Check Now';
+      alert(`⚠️ Underpayment detected. Contact support: ${settings.support_phone || ''}`);
+      return;
+    }
+
+    if (result.status === 'overpaid') {
+      btn.disabled = false;
+      btn.textContent = '✅ I\'ve Paid — Check Now';
+      alert(`⚠️ Overpayment detected. Contact support: ${settings.support_phone || ''}`);
+      return;
+    }
+
+    if (result.status === 'out_of_stock') {
+      btn.disabled = false;
+      btn.textContent = '🔄 Try Again';
+      alert(`⚠️ Out of stock. Contact support: ${settings.support_phone || ''}`);
+      return;
+    }
+
+    btn.disabled = false;
+    btn.textContent = '⏳ Not Confirmed Yet — Try Again in 1 min';
+    setTimeout(() => { btn.textContent = '✅ I\'ve Paid — Check Now'; }, 5000);
+
+  } catch(e) {
+    btn.disabled = false;
+    btn.textContent = '✅ I\'ve Paid — Check Now';
+    console.error('checkPayment error:', e);
+  }
+}
+
+function startAutoCheck() {
+  if (autoCheckTimer) clearInterval(autoCheckTimer);
+  autoCheckTimer = setInterval(async () => {
+    if (!identifierCode) return;
+    try {
+      const result = await apiGet(`/api/transaction-status?code=${encodeURIComponent(identifierCode)}`);
+      if (result.status === 'completed' && result.voucher) {
+        clearInterval(autoCheckTimer);
+        saveVoucherLocally(result.voucher);
+        showVoucher(result.voucher);
+      }
+    } catch(e) { /* ignore */ }
+  }, 30000);
+}
+
+// ============================================
+// VOUCHER
+// ============================================
+function saveVoucherLocally(code) {
+  localStorage.setItem('kb_voucher_' + identifierCode, code);
+  localStorage.setItem('kb_voucher_time_' + identifierCode, Date.now().toString());
+}
+
+function showVoucher(code) {
+  document.getElementById('voucher-display').textContent = code;
+  showPage('page-4');
+  setStep(4);
+  document.getElementById('step-4').classList.add('done');
+}
+
+function copyVoucher() {
+  const code = document.getElementById('voucher-display').textContent;
+  navigator.clipboard.writeText(code).then(() => {
+    const btn = document.querySelector('.voucher-copy-btn');
+    btn.textContent = '✅ COPIED!';
+    setTimeout(() => { btn.textContent = '📋 COPY CODE'; }, 2000);
+  });
+}
+
+// ============================================
+// RETRIEVE
+// ============================================
+async function retrieveCode() {
+  const phone = document.getElementById('retrieve-phone').value.trim();
+  if (!phone || phone.length < 10) { alert('Please enter a valid phone number.'); return; }
+
+  showLoading('Searching for your voucher...');
+
+  try {
+    const result = await apiPost('/api/retrieve-voucher', { phone, device_id: deviceId });
+    hideLoading();
+
+    const resultDiv = document.getElementById('retrieve-result');
+    resultDiv.style.display = 'block';
+
+    if (!result.found) {
+      if (result.device_mismatch) {
+        resultDiv.innerHTML = `<div class="card"><div class="alert alert-warning">🔒 Security check failed. Vouchers can only be retrieved from the <strong>same device</strong> used during purchase.<br><br>Contact support: <strong>${settings.support_phone || ''}</strong></div></div>`;
+      } else {
+        resultDiv.innerHTML = `<div class="card"><div class="alert alert-warning">❌ No vouchers found for this number in the last 48 hours.<br><br>Contact support: <strong>${settings.support_phone || ''}</strong></div></div>`;
+      }
+      return;
+    }
+
+    let html = '<div class="card"><div class="card-title">✅ Your Vouchers</div>';
+    for (const v of result.vouchers) {
+      const date = new Date(v.timestamp).toLocaleDateString('en-NG', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' });
+      html += `<div style="background:var(--surface2); border:1px solid var(--border); border-radius:12px; padding:14px; margin-bottom:10px;">
+        <div style="display:flex; justify-content:space-between; margin-bottom:8px;">
+          <span style="font-size:0.8rem; color:var(--text2);">${date}</span>
+          <span style="font-size:0.8rem; color:var(--accent);">₦${parseInt(v.amount).toLocaleString()}</span>
+        </div>
+        <div style="font-family:'Syne',sans-serif; font-size:1.3rem; font-weight:800; color:var(--accent); letter-spacing:2px; word-break:break-all; margin-bottom:8px;">${v.voucher_code}</div>
+        <button onclick="navigator.clipboard.writeText('${v.voucher_code}').then(()=>this.textContent='✅ Copied!').catch(()=>{})"
+          style="background:rgba(0,212,255,0.1); border:1px solid var(--accent); color:var(--accent); border-radius:8px; padding:6px 16px; font-size:0.78rem; font-family:'Syne',sans-serif; font-weight:700; cursor:pointer;">
+          📋 COPY
+        </button>
+      </div>`;
+    }
+    html += '</div>';
+    resultDiv.innerHTML = html;
+
+  } catch(e) {
+    hideLoading();
+    alert('Error: ' + e.message);
+  }
+}
+
+// ============================================
+// UI HELPERS
+// ============================================
+function showPage(pageId) {
+  document.querySelectorAll('#tab-buy .page').forEach(p => p.classList.remove('active'));
+  document.getElementById(pageId).classList.add('active');
+}
+
+function setStep(n) {
+  for (let i = 1; i <= 4; i++) {
+    const s = document.getElementById(`step-${i}`);
+    s.classList.remove('active', 'done');
+    if (i < n) s.classList.add('done');
+    if (i === n) s.classList.add('active');
+  }
+}
+
+function switchTab(tab) {
+  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+  document.querySelectorAll('.page[id^="tab-"]').forEach(p => p.classList.remove('active'));
+  if (tab === 'buy') {
+    document.querySelectorAll('.tab')[0].classList.add('active');
+    document.getElementById('tab-buy').classList.add('active');
+  } else {
+    document.querySelectorAll('.tab')[1].classList.add('active');
+    document.getElementById('tab-retrieve').classList.add('active');
+    document.getElementById('retrieve-result').style.display = 'none';
+  }
+}
+
+function showLoading(text = 'Loading...') {
+  document.getElementById('loading-text').textContent = text;
+  document.getElementById('loading-overlay').classList.add('show');
+}
+
+function hideLoading() {
+  document.getElementById('loading-overlay').classList.remove('show');
+}
+
+function resetBuy() {
+  selectedProduct = null;
+  identifierCode = null;
+  currentPhone = null;
+  currentSite = null;
+  flwPublicKey = null;
+  if (autoCheckTimer) clearInterval(autoCheckTimer);
+  document.getElementById('btn-select-product').disabled = true;
+  document.getElementById('payment-summary-card').style.display = 'block';
+  document.getElementById('waiting-card').style.display = 'none';
+  document.querySelectorAll('.product-card').forEach(c => c.classList.remove('selected'));
+  document.getElementById('phone-input').value = '';
+  document.getElementById('site-input').value = '';
+  goToPage1();
+}
+
+// ============================================
+// INIT
+// ============================================
+window.onload = async () => {
+  try {
+    settings = await apiGet('/api/public-settings');
+    const waitMins = parseInt(settings.auto_check_interval || '5') * 2;
+    document.getElementById('support-phone-display').textContent = settings.support_phone || '';
+    document.getElementById('support-wait-mins').textContent = waitMins;
+  } catch(e) { /* use defaults */ }
+  loadProducts();
+};
+</script>
+</body>
+</html>
