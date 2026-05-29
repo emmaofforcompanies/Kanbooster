@@ -32,25 +32,26 @@ const supabase = createClient(
 // Helmet — sets secure HTTP headers
 app.use(helmet({
   contentSecurityPolicy: {
-    directives: {
-      defaultSrc: ["'self'"],
-      scriptSrc: [
-        "'self'",
-        "'unsafe-inline'",  // needed for inline JS in HTML
-        "https://checkout.flutterwave.com",
-        "https://cdn.jsdelivr.net",
-        "https://fonts.googleapis.com",
-      ],
-      styleSrc: ["'self'", "'unsafe-inline'", "https://fonts.googleapis.com"],
-      fontSrc: ["'self'", "https://fonts.gstatic.com"],
-      frameSrc: ["https://checkout.flutterwave.com"],
-      connectSrc: [
-        "'self'",
-        "https://checkout.flutterwave.com",
-        "https://api.flutterwave.com",
-      ],
-      imgSrc: ["'self'", "data:", "https:"],
-    }
+  directives: {
+    defaultSrc: ["'self'"],
+    scriptSrc: [
+      "'self'",
+      "'unsafe-inline'",
+      "https://checkout.flutterwave.com",
+      "https://cdn.jsdelivr.net",
+      "https://fonts.googleapis.com",
+    ],
+    scriptSrcAttr: ["'unsafe-inline'"],
+    styleSrc: ["'self'", "'unsafe-inline'", "https://fonts.googleapis.com"],
+    fontSrc: ["'self'", "https://fonts.gstatic.com"],
+    frameSrc: ["https://checkout.flutterwave.com"],
+    connectSrc: [
+      "'self'",
+      "https://checkout.flutterwave.com",
+      "https://api.flutterwave.com",
+    ],
+    imgSrc: ["'self'", "data:", "https:"],
+  }
   }
 }));
 
