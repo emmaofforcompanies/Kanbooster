@@ -766,22 +766,70 @@ app.post('/api/admin/products', verifyAdmin, async (req, res) => {
 });
 
 // Admin: manual deliver
+// Admin: manual deliver
 app.post('/api/admin/deliver', verifyAdmin, async (req, res) => {
   try {
-    const paymentCode = sanitizeString(req.body.payment_code, 30);
-    const productId = req.body.product_id;
+    const phone = sanitizeString(req.body.phone, 15);
+    const productId = parseInt(req.body.product_id);
     const siteName = sanitizeString(req.body.site_name, 50);
+    const amountPaid = sanitizeString(String(req.body.amount_paid || ''), 20);
 
-    const voucher = await assignVoucher(productId, siteName);
-    if (!voucher) return res.status(400).json({ error: 'No stock available' });
+    if (!phone || !productId || !siteName) {
+      return res.status(400).json({ error: 'Phone, product and site name are required' });
+    }
 
-    await supabase.from('web_transactions').update({
-      status: 'completed', voucher_code: voucher,
-      sent: 'delivered', delivered_at: new Date().toISOString()
-    }).eq('payment_code', paymentCode);
+    if (!isValidPhone(phone)) {
+      return res.status(400).json({ error: 'Invalid phone number' });
+    }
 
-    res.json({ success: true, voucher });
+    // Get product info
+    const { data: product } = await supabase
+      .from('products').select('name, price').eq('product_id', productId).single();
+    if (!product) return res.status(400).json({ error: 'Product not found' });
+
+    // Assign voucher
+    const voucher = await assignVoucher(String(productId), siteName);
+    if (!voucher) return res.status(400).json({ error: 'No stock available for this plan and site' });
+
+    // Generate a unique payment code for this manual transaction
+    const crypto = require('crypto');
+    const paymentCode = 'MAN_' + crypto.randomBytes(8).toString('hex').toUpperCase();
+
+    // Insert full transaction record
+    const { data: txn, error } = await supabase.from('transactions').insert({
+      timestamp: new Date().toISOString(),
+      telegram_id: 'MANUAL_ADMIN',
+      username: req.adminUser,
+      product_id: String(productId),
+      amount: amountPaid || String(product.price),
+      payment_code: paymentCode,
+      status: 'completed',
+      site_name: siteName.toLowerCase().replace(/\s+/g, ''),
+      voucher_code: voucher,
+      sent: 'delivered',
+      check_count: 0,
+      phone: phone,
+      delivery_method: 'manual',
+      recipient_phone: phone,
+      device_id: 'manual_admin_delivery',
+      delivered_at: new Date().toISOString(),
+      flw_ref: 'MANUAL',
+    }).select().single();
+
+    if (error) throw error;
+
+    res.json({
+      success: true,
+      voucher,
+      payment_code: paymentCode,
+      product_name: product.name,
+      amount: amountPaid || product.price,
+      phone,
+      site_name: siteName,
+    });
+
   } catch(e) {
+    console.error('Manual deliver error:', e);
     res.status(500).json({ error: e.message });
   }
 });
