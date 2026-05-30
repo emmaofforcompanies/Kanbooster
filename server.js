@@ -13,6 +13,7 @@ const { createClient } = require('@supabase/supabase-js');
 const ws = require('ws');
 
 const app = express();
+app.set('trust proxy', 1);
 const PORT = process.env.PORT || 3000;
 
 // ============================================
@@ -610,9 +611,11 @@ app.post('/api/admin/login', loginLimiter, async (req, res) => {
     });
 
     // Log login
-    await supabase.from('admin_logins').insert({
-      username, logged_in_at: new Date().toISOString(), ip: req.ip
-    }).catch(() => {});
+    try {
+  await supabase.from('admin_logins').insert({
+    username, logged_in_at: new Date().toISOString(), ip: req.ip
+  });
+} catch(e) {}
 
     res.json({ success: true, token, username });
   } catch(e) {
