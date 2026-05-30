@@ -266,10 +266,8 @@ app.post('/api/create-transaction', purchaseLimiter, async (req, res) => {
     if (existing) return res.status(400).json({ error: 'Identifier already used' });
 
     // Insert transaction
-    const { data, error } = await supabase.from('transactions').insert({
+    const { data, error } = await supabase.from('web_transactions').insert({
       timestamp: new Date().toISOString(),
-      telegram_id: 'WEB_FLOW',
-      username: 'N/A',
       product_id: String(productId),
       amount: String(finalPrice),
       payment_code: identifierCode,
@@ -279,9 +277,9 @@ app.post('/api/create-transaction', purchaseLimiter, async (req, res) => {
       sent: 'undelivered',
       check_count: 0,
       phone: phone,
-      delivery_method: 'web',
       recipient_phone: phone,
       device_id: sanitizeString(req.body.device_id || '', 100),
+      delivery_method: 'web',
     }).select().single();
 
     if (error) throw error;
@@ -346,7 +344,7 @@ app.post('/api/confirm-payment', purchaseLimiter, async (req, res) => {
 
     // Get transaction
     const { data: txn } = await supabase
-      .from('transactions').select('*').eq('payment_code', identifierCode).single();
+      .from('web_transactions').select('*').eq('payment_code', identifierCode).single();
     if (!txn) return res.status(404).json({ error: 'Transaction not found' });
 
     // Already completed
@@ -358,19 +356,19 @@ app.post('/api/confirm-payment', purchaseLimiter, async (req, res) => {
     if (verifiedAmount !== null) {
       const expectedAmount = parseFloat(txn.amount);
       if (verifiedAmount < expectedAmount) {
-        await supabase.from('transactions').update({ status: 'underpaid', flw_ref: flwRef })
+        await supabase.from('web_transactions').update({ status: 'underpaid', flw_ref: flwRef })
           .eq('payment_code', identifierCode);
         return res.status(400).json({ error: 'underpaid', paid: verifiedAmount, expected: expectedAmount });
       }
       if (verifiedAmount > expectedAmount) {
-        await supabase.from('transactions').update({ status: 'overpaid', flw_ref: flwRef })
+        await supabase.from('web_transactions').update({ status: 'overpaid', flw_ref: flwRef })
           .eq('payment_code', identifierCode);
         return res.status(400).json({ error: 'overpaid', paid: verifiedAmount, expected: expectedAmount });
       }
     }
 
     // Update to confirmed
-    await supabase.from('transactions').update({
+    await supabase.from('web_transactions').update({
       status: 'confirmed',
       flw_ref: flwRef || txn.flw_ref,
     }).eq('payment_code', identifierCode);
@@ -379,12 +377,12 @@ app.post('/api/confirm-payment', purchaseLimiter, async (req, res) => {
     const voucher = await assignVoucher(txn.product_id, txn.site_name);
 
     if (!voucher) {
-      await supabase.from('transactions').update({ status: 'out_of_stock' }).eq('payment_code', identifierCode);
+      await supabase.from('web_transactions').update({ status: 'out_of_stock' }).eq('payment_code', identifierCode);
       return res.status(400).json({ error: 'out_of_stock' });
     }
 
     // Mark delivered
-    await supabase.from('transactions').update({
+    await supabase.from('web_transactions').update({
       status: 'completed',
       voucher_code: voucher,
       sent: 'delivered',
@@ -406,7 +404,7 @@ app.get('/api/transaction-status', async (req, res) => {
     const identifierCode = sanitizeString(req.query.code || '', 30);
     if (!isValidIdentifier(identifierCode)) return res.status(400).json({ error: 'Invalid code' });
 
-    const { data: txn } = await supabase.from('transactions')
+    const { data: txn } = await supabase.from('web_transactions')
       .select('status, voucher_code, sent, check_count, flw_ref, amount, product_id, site_name')
       .eq('payment_code', identifierCode)
       .single();
@@ -414,7 +412,7 @@ app.get('/api/transaction-status', async (req, res) => {
     if (!txn) return res.status(404).json({ error: 'Not found' });
 
     // Always increment check_count
-    await supabase.from('transactions')
+    await supabase.from('web_transactions')
       .update({ check_count: (txn.check_count || 0) + 1 })
       .eq('payment_code', identifierCode);
 
@@ -459,14 +457,14 @@ app.get('/api/transaction-status', async (req, res) => {
 
           if (flwTxn.status === 'successful') {
             if (paidAmount < expectedAmount) {
-              await supabase.from('transactions')
+              await supabase.from('web_transactions')
                 .update({ status: 'underpaid', flw_ref: flwRef })
                 .eq('payment_code', identifierCode);
               return res.json({ status: 'underpaid', voucher: null });
             }
 
             if (paidAmount > expectedAmount) {
-              await supabase.from('transactions')
+              await supabase.from('web_transactions')
                 .update({ status: 'overpaid', flw_ref: flwRef })
                 .eq('payment_code', identifierCode);
               return res.json({ status: 'overpaid', voucher: null });
@@ -475,13 +473,13 @@ app.get('/api/transaction-status', async (req, res) => {
             // Exact match — deliver voucher
             const voucher = await assignVoucher(txn.product_id, txn.site_name);
             if (!voucher) {
-              await supabase.from('transactions')
+              await supabase.from('web_transactions')
                 .update({ status: 'out_of_stock', flw_ref: flwRef })
                 .eq('payment_code', identifierCode);
               return res.json({ status: 'out_of_stock', voucher: null });
             }
 
-            await supabase.from('transactions').update({
+            await supabase.from('web_transactions').update({
               status: 'completed',
               voucher_code: voucher,
               sent: 'delivered',
@@ -515,7 +513,7 @@ app.post('/api/retrieve-voucher', async (req, res) => {
 
     const cutoff = new Date(Date.now() - 48 * 60 * 60 * 1000).toISOString();
 
-    const { data } = await supabase.from('transactions')
+    const { data } = await supabase.from('web_transactions')
       .select('payment_code, voucher_code, amount, timestamp, site_name, device_id')
       .eq('phone', phone)
       .eq('status', 'completed')
@@ -636,7 +634,7 @@ app.get('/api/admin/transactions', verifyAdmin, async (req, res) => {
     const { from, to, status, search, page = 1 } = req.query;
     const pageSize = 50;
 
-    let query = supabase.from('transactions').select('*', { count: 'exact' });
+    let query = supabase.from('web_transactions').select('*', { count: 'exact' });
     if (from) query = query.gte('timestamp', from + 'T00:00:00');
     if (to) query = query.lte('timestamp', to + 'T23:59:59');
     if (status) query = query.eq('status', status);
@@ -655,7 +653,7 @@ app.get('/api/admin/transactions', verifyAdmin, async (req, res) => {
 app.get('/api/admin/stats', verifyAdmin, async (req, res) => {
   try {
     const { from, to } = req.query;
-    let query = supabase.from('transactions').select('status, amount, site_name');
+    let query = supabase.from('web_transactions').select('status, amount, site_name');
     if (from) query = query.gte('timestamp', from + 'T00:00:00');
     if (to) query = query.lte('timestamp', to + 'T23:59:59');
     const { data } = await query;
@@ -774,7 +772,7 @@ app.post('/api/admin/deliver', verifyAdmin, async (req, res) => {
     const voucher = await assignVoucher(productId, siteName);
     if (!voucher) return res.status(400).json({ error: 'No stock available' });
 
-    await supabase.from('transactions').update({
+    await supabase.from('web_transactions').update({
       status: 'completed', voucher_code: voucher,
       sent: 'delivered', delivered_at: new Date().toISOString()
     }).eq('payment_code', paymentCode);
@@ -788,9 +786,9 @@ app.post('/api/admin/deliver', verifyAdmin, async (req, res) => {
 // Admin: get pending/issues
 app.get('/api/admin/pending', verifyAdmin, async (req, res) => {
   try {
-    const { data: confirmed } = await supabase.from('transactions').select('*')
+    const { data: confirmed } = await supabase.from('web_transactions').select('*')
       .in('status', ['confirmed']).eq('sent', 'undelivered').order('timestamp', { ascending: false }).limit(50);
-    const { data: issues } = await supabase.from('transactions').select('*')
+    const { data: issues } = await supabase.from('web_transactions').select('*')
       .in('status', ['underpaid','overpaid','out_of_stock']).order('timestamp', { ascending: false }).limit(50);
     res.json({ confirmed: confirmed || [], issues: issues || [] });
   } catch(e) {
