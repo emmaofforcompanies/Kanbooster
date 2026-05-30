@@ -322,10 +322,11 @@ app.post('/api/confirm-payment', purchaseLimiter, async (req, res) => {
             method: 'GET',
             headers: {
               'Authorization': `Bearer ${process.env.FLW_SECRET_KEY}`,
-              'Content-Type': 'application/json'
+              'Content-Type': 'application/json',
+              'User-Agent': 'Mozilla/5.0 (compatible; KanBooster/1.0)',
             }
           };
-          const req2 = https.request(options, (resp) => {
+          const r = https.request(options, (resp) => {
             let data = '';
             resp.on('data', chunk => data += chunk);
             resp.on('end', () => resolve(JSON.parse(data)));
@@ -435,10 +436,11 @@ app.get('/api/transaction-status', async (req, res) => {
             method: 'GET',
             headers: {
               'Authorization': `Bearer ${process.env.FLW_SECRET_KEY}`,
-              'Content-Type': 'application/json'
+              'Content-Type': 'application/json',
+              'User-Agent': 'Mozilla/5.0 (compatible; KanBooster/1.0)',
             }
           };
-          const r = https.request(options, (resp) => {
+          const req2 = https.request(options, (resp) => {
             let d = '';
             resp.on('data', chunk => d += chunk);
             resp.on('end', () => { try { resolve(JSON.parse(d)); } catch(e) { reject(e); } });
