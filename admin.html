@@ -407,6 +407,7 @@ async function doLogin() {
     loadDashboard();
     loadProductsTable();
     loadSettings();
+    populateManualProducts();
   } catch(e) {
     showLoginError(e.message || 'Invalid credentials');
     btn.disabled = false;
@@ -448,6 +449,7 @@ window.onload = () => {
     loadDashboard();
     loadProductsTable();
     loadSettings();
+    populateManualProducts();
   }
 };
 
