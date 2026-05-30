@@ -306,17 +306,37 @@
       </div>
 
       <!-- MANUAL DELIVER -->
-      <div class="section" id="section-manual-deliver">
-        <div class="section-title">Manual Voucher Delivery</div>
-        <div class="card">
-          <div class="card-title">🎟 Deliver by Identifier Code</div>
-          <p style="font-size:0.82rem; color:var(--text2); margin-bottom:14px;">Manually assign a voucher to a customer who paid but didn't receive their code.</p>
-          <label class="form-label">Identifier Code</label>
-          <input type="text" class="form-input" id="manual-identifier" placeholder="Paste customer identifier code">
-          <button class="btn btn-primary" onclick="lookupManual()">🔍 Lookup Transaction</button>
-          <div id="manual-lookup-result" style="margin-top:14px; display:none;"></div>
-        </div>
+<div class="section" id="section-manual-deliver">
+  <div class="section-title">Manual Voucher Delivery</div>
+  <div class="card">
+    <div class="card-title">🎟 New Manual Delivery</div>
+    <p style="font-size:0.82rem; color:var(--text2); margin-bottom:14px;">Get a voucher code for a customer who paid manually. A full transaction record will be created automatically.</p>
+    <div class="form-row">
+      <div class="form-group">
+        <label class="form-label">Data Plan</label>
+        <select class="form-input" id="manual-product-id">
+          <option value="">Select plan...</option>
+        </select>
       </div>
+      <div class="form-group">
+        <label class="form-label">Site Name</label>
+        <input type="text" class="form-input" id="manual-site" placeholder="e.g. site1">
+      </div>
+    </div>
+    <div class="form-row">
+      <div class="form-group">
+        <label class="form-label">Customer Phone</label>
+        <input type="tel" class="form-input" id="manual-phone" placeholder="e.g. 08012345678" maxlength="11">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Amount Paid (₦)</label>
+        <input type="number" class="form-input" id="manual-amount" placeholder="e.g. 500">
+      </div>
+    </div>
+    <button class="btn btn-primary" id="manual-deliver-btn" onclick="manualDeliver()">🎟 Get & Deliver Code</button>
+    <div id="manual-deliver-result" style="margin-top:14px; display:none;"></div>
+  </div>
+</div>
 
     </div>
   </div>
