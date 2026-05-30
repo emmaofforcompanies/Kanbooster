@@ -263,7 +263,7 @@ app.post('/api/create-transaction', purchaseLimiter, async (req, res) => {
 
     // Check for duplicate identifier
     const { data: existing } = await supabase
-      .from('transactions').select('id').eq('payment_code', identifierCode).single();
+      .from('web_transactions').select('id').eq('payment_code', identifierCode).single();
     if (existing) return res.status(400).json({ error: 'Identifier already used' });
 
     // Insert transaction
@@ -765,74 +765,81 @@ app.post('/api/admin/products', verifyAdmin, async (req, res) => {
   }
 });
 
-// Admin: manual deliver
-// Admin: manual deliver
-app.post('/api/admin/deliver', verifyAdmin, async (req, res) => {
+// ============================================
+// MANUAL DELIVER
+// ============================================
+async function populateManualProducts() {
   try {
-    const phone = sanitizeString(req.body.phone, 15);
-    const productId = parseInt(req.body.product_id);
-    const siteName = sanitizeString(req.body.site_name, 50);
-    const amountPaid = sanitizeString(String(req.body.amount_paid || ''), 20);
+    const { products } = await apiGet('/api/admin/products');
+    const sel = document.getElementById('manual-product-id');
+    if (!sel) return;
+    sel.innerHTML = '<option value="">Select plan...</option>' +
+      products.filter(p => p.status === 'active')
+        .map(p => `<option value="${p.product_id}">${p.name} (₦${parseInt(p.price).toLocaleString()})</option>`)
+        .join('');
+  } catch(e) { /* ignore */ }
+}
 
-    if (!phone || !productId || !siteName) {
-      return res.status(400).json({ error: 'Phone, product and site name are required' });
-    }
+async function manualDeliver() {
+  const productId = document.getElementById('manual-product-id').value;
+  const site = document.getElementById('manual-site').value.trim();
+  const phone = document.getElementById('manual-phone').value.trim();
+  const amount = document.getElementById('manual-amount').value.trim();
+  const resultEl = document.getElementById('manual-deliver-result');
+  const btn = document.getElementById('manual-deliver-btn');
 
-    if (!isValidPhone(phone)) {
-      return res.status(400).json({ error: 'Invalid phone number' });
-    }
+  if (!productId) { showToast('❌ Select a data plan', 'error'); return; }
+  if (!site) { showToast('❌ Enter site name', 'error'); return; }
+  if (!phone || phone.length < 10) { showToast('❌ Enter valid phone number', 'error'); return; }
+  if (!amount) { showToast('❌ Enter amount paid', 'error'); return; }
 
-    // Get product info
-    const { data: product } = await supabase
-      .from('products').select('name, price').eq('product_id', productId).single();
-    if (!product) return res.status(400).json({ error: 'Product not found' });
+  btn.disabled = true;
+  btn.textContent = '⏳ Processing...';
+  resultEl.style.display = 'none';
 
-    // Assign voucher
-    const voucher = await assignVoucher(String(productId), siteName);
-    if (!voucher) return res.status(400).json({ error: 'No stock available for this plan and site' });
-
-    // Generate a unique payment code for this manual transaction
-    const crypto = require('crypto');
-    const paymentCode = 'MAN_' + crypto.randomBytes(8).toString('hex').toUpperCase();
-
-    // Insert full transaction record
-    const { data: txn, error } = await supabase.from('transactions').insert({
-      timestamp: new Date().toISOString(),
-      telegram_id: 'MANUAL_ADMIN',
-      username: req.adminUser,
-      product_id: String(productId),
-      amount: amountPaid || String(product.price),
-      payment_code: paymentCode,
-      status: 'completed',
-      site_name: siteName.toLowerCase().replace(/\s+/g, ''),
-      voucher_code: voucher,
-      sent: 'delivered',
-      check_count: 0,
+  try {
+    const result = await apiPost('/api/admin/deliver', {
+      product_id: productId,
+      site_name: site,
       phone: phone,
-      delivery_method: 'manual',
-      recipient_phone: phone,
-      device_id: 'manual_admin_delivery',
-      delivered_at: new Date().toISOString(),
-      flw_ref: 'MANUAL',
-    }).select().single();
-
-    if (error) throw error;
-
-    res.json({
-      success: true,
-      voucher,
-      payment_code: paymentCode,
-      product_name: product.name,
-      amount: amountPaid || product.price,
-      phone,
-      site_name: siteName,
+      amount_paid: amount,
     });
 
+    resultEl.style.display = 'block';
+    resultEl.innerHTML = `
+      <div class="alert alert-success">✅ Voucher delivered successfully!</div>
+      <div class="card" style="margin-bottom:0;">
+        <table style="width:100%; font-size:0.85rem;">
+          <tr><td style="color:var(--text2); padding:6px 0; width:100px;">Voucher</td>
+              <td style="font-family:'JetBrains Mono',monospace; font-size:1.1rem; color:var(--success);">${result.voucher}</td></tr>
+          <tr><td style="color:var(--text2); padding:6px 0;">Plan</td><td>${result.product_name}</td></tr>
+          <tr><td style="color:var(--text2); padding:6px 0;">Phone</td><td>${result.phone}</td></tr>
+          <tr><td style="color:var(--text2); padding:6px 0;">Amount</td><td style="color:var(--accent);">₦${parseFloat(result.amount).toLocaleString()}</td></tr>
+          <tr><td style="color:var(--text2); padding:6px 0;">Site</td><td>${result.site_name}</td></tr>
+          <tr><td style="color:var(--text2); padding:6px 0;">Ref</td>
+              <td style="font-family:'JetBrains Mono',monospace; font-size:0.72rem; color:var(--text2);">${result.payment_code}</td></tr>
+        </table>
+        <button class="btn btn-secondary btn-sm" style="margin-top:12px;"
+          onclick="navigator.clipboard.writeText('${result.voucher}').then(()=>showToast('✅ Code copied!','success'))">
+          📋 Copy Code
+        </button>
+      </div>`;
+
+    showToast('✅ Voucher delivered!', 'success');
+    document.getElementById('manual-product-id').value = '';
+    document.getElementById('manual-site').value = '';
+    document.getElementById('manual-phone').value = '';
+    document.getElementById('manual-amount').value = '';
+
   } catch(e) {
-    console.error('Manual deliver error:', e);
-    res.status(500).json({ error: e.message });
+    resultEl.style.display = 'block';
+    resultEl.innerHTML = `<div class="alert alert-danger">❌ ${e.message}</div>`;
+    showToast('❌ ' + e.message, 'error');
   }
-});
+
+  btn.disabled = false;
+  btn.textContent = '🎟 Get & Deliver Code';
+}
 
 // Admin: get pending/issues
 app.get('/api/admin/pending', verifyAdmin, async (req, res) => {
