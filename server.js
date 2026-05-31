@@ -63,7 +63,11 @@ connectSrc: [
 // CORS — only allow your domain
 const allowedOrigins = [
   `http://localhost:${PORT}`,
-  process.env.SITE_URL,  // e.g. https://yourdomain.com
+  `https://localhost:${PORT}`,
+  'https://www.kanbooster.website',
+  'https://kanbooster.website',
+  'http://www.kanbooster.website',
+  'http://kanbooster.website',
 ].filter(Boolean);
 
 app.use(cors({
