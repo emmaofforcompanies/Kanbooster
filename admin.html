@@ -892,25 +892,6 @@ async function populateManualProducts() {
   } catch(e) {}
 }
 
-
-app.get('/api/admin/site-products', verifyAdmin, async (req, res) => {
-  try {
-    const siteName = sanitizeString(req.query.site || '', 50);
-    if (!siteName) return res.json({ products: [] });
-
-    const { data, error } = await supabase
-      .from('site_prices')
-      .select('*')
-      .ilike('site_name', siteName)
-      .order('product_id');
-
-    if (error) throw error;
-    res.json({ products: data || [] });
-  } catch(e) {
-    res.status(500).json({ error: e.message });
-  }
-});
-
 // ============================================
 // SETTINGS
 // ============================================
