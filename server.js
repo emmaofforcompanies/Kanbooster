@@ -582,7 +582,7 @@ app.post('/api/retrieve-voucher', async (req, res) => {
 // Get settings (only safe public ones)
 app.get('/api/public-settings', async (req, res) => {
   try {
-    const SAFE_SETTINGS = ['support_phone', 'terms_link', 'tutorial_link', 'auto_check_interval'];
+    const SAFE_SETTINGS = ['support_phone', 'terms_link', 'tutorial_link', 'auto_check_interval', 'review_link'];
     const { data } = await supabase.from('settings').select('*').in('setting_name', SAFE_SETTINGS);
     const result = {};
     if (data) data.forEach(s => { result[s.setting_name] = s.setting_value; });
