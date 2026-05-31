@@ -150,10 +150,11 @@ app.get('/api/products', async (req, res) => {
     if (!siteName) return res.json({ products: [], requires_site: true });
 
     const { data, error } = await supabase
-      .from('site_prices')
-      .select('id, product_id, site_name, price, name, status')
-      .ilike('site_name', siteName)
-      .eq('status', 'active');
+  .from('site_prices')
+  .select('id, product_id, site_name, price, name, status')
+  .ilike('site_name', siteName)
+  .eq('status', 'active')
+  .order('price', { ascending: true });
 
     if (error) throw error;
 
