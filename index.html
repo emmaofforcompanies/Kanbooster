@@ -596,7 +596,7 @@ async function checkPayment() {
     if (result.status === 'completed' && result.voucher) {
       if (autoCheckTimer) clearInterval(autoCheckTimer);
       saveVoucherLocally(result.voucher);
-      showVoucher(result.voucher);
+      showVoucher(result.voucher, result.product_name || selectedProduct?.name);
       return;
     }
 
@@ -611,7 +611,7 @@ async function checkPayment() {
         if (deliver.success && deliver.voucher) {
           if (autoCheckTimer) clearInterval(autoCheckTimer);
           saveVoucherLocally(deliver.voucher);
-          showVoucher(deliver.voucher);
+          showVoucher(deliver.voucher, deliver.product_name || selectedProduct?.name);
           return;
         }
       } catch(e) { /* will retry */ }
@@ -658,7 +658,7 @@ function startAutoCheck() {
       if (result.status === 'completed' && result.voucher) {
         clearInterval(autoCheckTimer);
         saveVoucherLocally(result.voucher);
-        showVoucher(result.voucher);
+        showVoucher(result.voucher, result.product_name || selectedProduct?.name);
       }
     } catch(e) { /* ignore */ }
   }, 30000);
