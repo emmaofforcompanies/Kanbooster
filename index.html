@@ -179,7 +179,7 @@
   <div class="card">
   <div class="card-title">📍 Enter Your Site Name</div>
   <label>Site Name</label>
-  <input type="text" id="site-select" placeholder="Enter your site name">
+  <input type="text" id="site-select" placeholder="Enter your site name" autocomplete="off" autocorrect="off" autocapitalize="none" spellcheck="false">
   <div id="site-error" style="display:none; color:var(--danger); font-size:0.8rem; margin-top:-10px; margin-bottom:10px;"></div>
   <button class="btn btn-primary" onclick="onSiteSubmit()">Continue →</button>
     <div style="margin-top:12px; font-size:0.78rem; color:var(--text2); text-align:center;">
@@ -320,7 +320,7 @@
         You can only retrieve vouchers purchased within the last <strong>48 hours</strong> from this same device.
       </div>
       <label>Phone Number Used During Purchase</label>
-      <input type="tel" id="retrieve-phone" placeholder="e.g. 08012345678" maxlength="11">
+      <input type="tel" id="retrieve-phone" placeholder="e.g. 08012345678" maxlength="14" autocomplete="tel" autocorrect="off">
       <button class="btn btn-primary" onclick="retrieveCode()">Find My Voucher →</button>
     </div>
     <div id="retrieve-result" style="display:none;"></div>
