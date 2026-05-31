@@ -398,7 +398,7 @@ function onSiteChange(siteName) {
   loadProducts(siteName);
 }
 
-async function loadProducts() {
+async function loadProducts(siteName) {
   try {
     document.getElementById('products-loading').style.display = 'block';
     document.getElementById('products-grid').style.display = 'none';
@@ -446,7 +446,6 @@ async function loadProducts() {
 function goToPage1() {
   showPage('page-1');
   setStep(1);
-  loadProducts();
 }
 
 function goToPage2() {
@@ -522,7 +521,7 @@ async function goToPage3() {
 // ============================================
 function openPayment() {
   const phone = currentPhone || document.getElementById('phone-input').value.trim();
-  const siteName = document.getElementById('site-input').value.trim();
+  const siteName = document.getElementById('site-select').value;
 
   try {
     FlutterwaveCheckout({
