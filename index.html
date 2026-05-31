@@ -722,7 +722,7 @@ function copyVoucher() {
 // RETRIEVE
 // ============================================
 async function retrieveCode() {
-  const phone = document.getElementById('retrieve-phone').value.trim();
+  const phone = document.getElementById('retrieve-phone').value.trim().replace(/[\s\-().]/g, '');
   if (!phone || phone.length < 10) { alert('Please enter a valid phone number.'); return; }
 
   showLoading('Searching for your voucher...');
