@@ -537,7 +537,7 @@ app.post('/api/retrieve-voucher', async (req, res) => {
     if (!isValidPhone(phone)) return res.status(400).json({ error: 'Invalid phone' });
     if (!deviceId) return res.status(400).json({ error: 'Missing device ID' });
 
-    const cutoff = new Date(Date.now() - 60 * 24 * 60 * 60 * 1000).toISOString();
+    const cutoff = new Date(Date.now() - 48 * 60 * 60 * 1000).toISOString();
 
     const { data } = await supabase.from('web_transactions')
       .select('payment_code, voucher_code, amount, timestamp, site_name, device_id')
@@ -546,7 +546,7 @@ app.post('/api/retrieve-voucher', async (req, res) => {
       .eq('delivery_method', 'web')
       .gte('timestamp', cutoff)
       .order('timestamp', { ascending: false })
-      .limit(3);
+      .limit(10);
 
     if (!data || data.length === 0) {
       return res.json({ found: false });
