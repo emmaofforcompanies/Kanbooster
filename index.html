@@ -177,12 +177,12 @@
     <!-- Page 1: Products -->
     <div id="page-1" class="page active">
   <div class="card">
-    <div class="card-title">📍 Select Your Site</div>
-    <label>Site</label>
-    <select id="site-select" onchange="onSiteChange(this.value)">
-      <option value="">-- Choose your site --</option>
-    </select>
-  </div>
+  <div class="card-title">📍 Enter Your Site Name</div>
+  <label>Site Name</label>
+  <input type="text" id="site-select" placeholder="Enter your site name">
+  <div id="site-error" style="display:none; color:var(--danger); font-size:0.8rem; margin-top:-10px; margin-bottom:10px;"></div>
+  <button class="btn btn-primary" onclick="onSiteSubmit()">Continue →</button>
+</div>
   <div id="products-section" style="display:none;">
     <div class="card">
       <div class="card-title">📶 Select Your Plan</div>
@@ -384,20 +384,38 @@ async function apiPost(endpoint, data) {
 // ============================================
 
 
-function onSiteChange(siteName) {
-  selectedProduct = null;
-  currentSite = null;
-  document.getElementById('btn-select-product').disabled = true;
-  document.querySelectorAll('.product-card').forEach(c => c.classList.remove('selected'));
-  if (!siteName) {
-    document.getElementById('products-section').style.display = 'none';
+async function onSiteSubmit() {
+  const raw = document.getElementById('site-select').value.trim();
+  const errEl = document.getElementById('site-error');
+  if (!raw) {
+    errEl.textContent = 'Please enter your site name.';
+    errEl.style.display = 'block';
     return;
   }
-  currentSite = siteName.replace(/\s+/g, '').toLowerCase();
-  document.getElementById('products-section').style.display = 'block';
-  loadProducts(siteName);
-}
 
+  errEl.style.display = 'none';
+  showLoading('Validating site...');
+
+  try {
+    const { valid } = await apiPost('/api/validate-site', { site_name: raw });
+    hideLoading();
+    if (!valid) {
+      errEl.textContent = 'Site name not recognised. Please check and try again.';
+      errEl.style.display = 'block';
+      return;
+    }
+    selectedProduct = null;
+    currentSite = raw.replace(/\s+/g, '').toLowerCase();
+    document.getElementById('btn-select-product').disabled = true;
+    document.querySelectorAll('.product-card').forEach(c => c.classList.remove('selected'));
+    document.getElementById('products-section').style.display = 'block';
+    loadProducts(raw);
+  } catch(e) {
+    hideLoading();
+    errEl.textContent = 'Could not validate site. Please try again.';
+    errEl.style.display = 'block';
+  }
+}
 async function loadProducts(siteName) {
   try {
     document.getElementById('products-loading').style.display = 'block';
@@ -791,6 +809,7 @@ function resetBuy() {
   document.querySelectorAll('.product-card').forEach(c => c.classList.remove('selected'));
   document.getElementById('phone-input').value = '';
   document.getElementById('site-select').value = '';
+  document.getElementById('site-error').style.display = 'none';
   document.getElementById('products-section').style.display = 'none';
   goToPage1();
 }
@@ -804,16 +823,6 @@ window.onload = async () => {
     const waitMins = parseInt(settings.auto_check_interval || '5') * 2;
     document.getElementById('support-phone-display').textContent = settings.support_phone || '';
     document.getElementById('support-wait-mins').textContent = waitMins;
-  } catch(e) {}
-
-  try {
-    const { sites } = await apiGet('/api/sites');
-    const sel = document.getElementById('site-select');
-    sites.forEach(s => {
-      const opt = document.createElement('option');
-      opt.value = s; opt.textContent = s;
-      sel.appendChild(opt);
-    });
   } catch(e) {}
 };
 </script>
