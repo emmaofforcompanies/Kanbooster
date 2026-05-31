@@ -147,28 +147,22 @@ function isValidIdentifier(code) {
 app.get('/api/products', async (req, res) => {
   try {
     const siteName = sanitizeString(req.query.site || '', 50);
+    if (!siteName) return res.json({ products: [], requires_site: true });
 
-    const { data: products, error } = await supabase
-      .from('products')
-      .select('product_id, name, price, status')
-      .eq('status', 'active')
-      .order('product_id');
+    const { data, error } = await supabase
+      .from('site_prices')
+      .select('id, product_id, site_name, price, name, status')
+      .ilike('site_name', siteName)
+      .eq('status', 'active');
 
     if (error) throw error;
 
-    let sitePrices = {};
-    if (siteName) {
-      const { data: sp } = await supabase
-        .from('site_prices')
-        .select('product_id, price')
-        .ilike('site_name', siteName);
-      if (sp) sp.forEach(p => { sitePrices[p.product_id] = p.price; });
-    }
-
-    // Attach effective price
-    const result = products.map(p => ({
-      ...p,
-      effective_price: sitePrices[p.product_id] || p.price
+    const result = (data || []).map(p => ({
+      product_id: p.product_id,
+      name: p.name,
+      price: p.price,
+      effective_price: p.price,
+      status: p.status
     }));
 
     res.json({ products: result });
@@ -252,14 +246,17 @@ app.post('/api/create-transaction', purchaseLimiter, async (req, res) => {
     if (!count || count === 0) return res.status(400).json({ error: 'Out of stock' });
 
     // Get price
-    const { data: product } = await supabase
-      .from('products').select('price, name').eq('product_id', productId).single();
-    if (!product) return res.status(400).json({ error: 'Product not found' });
+    const { data: spProduct } = await supabase
+  .from('site_prices')
+  .select('price, name')
+  .eq('product_id', String(productId))
+  .ilike('site_name', siteName)
+  .eq('status', 'active')
+  .single();
+if (!spProduct) return res.status(400).json({ error: 'Product not found for this site' });
 
-    let finalPrice = parseInt(product.price);
-    const { data: sp } = await supabase.from('site_prices')
-      .select('price').eq('product_id', String(productId)).ilike('site_name', siteName);
-    if (sp && sp.length > 0) finalPrice = parseInt(sp[0].price);
+const finalPrice = parseInt(spProduct.price);
+const product = { name: spProduct.name, price: finalPrice };
 
     // Check for duplicate identifier
     const { data: existing } = await supabase
@@ -419,7 +416,13 @@ app.get('/api/transaction-status', async (req, res) => {
 
     // Already done — return immediately
     if (txn.status === 'completed' && txn.voucher_code) {
-      return res.json({ status: 'completed', voucher: txn.voucher_code });
+      const { data: spName } = await supabase
+  .from('site_prices')
+  .select('name')
+  .eq('product_id', txn.product_id)
+  .ilike('site_name', txn.site_name)
+  .single();
+return res.json({ status: 'completed', voucher: txn.voucher_code, product_name: spName?.name || '' });
     }
 
     // If still pending, search FLW for a matching payment by tx_ref
@@ -740,9 +743,8 @@ app.post('/api/admin/settings', verifyAdmin, async (req, res) => {
 // Admin: get products
 app.get('/api/admin/products', verifyAdmin, async (req, res) => {
   try {
-    const { data } = await supabase.from('products').select('*').order('product_id');
-    const { data: sp } = await supabase.from('site_prices').select('*');
-    res.json({ products: data, site_prices: sp });
+    const { data } = await supabase.from('site_prices').select('*').order('site_name').order('product_id');
+res.json({ products: data, site_prices: data });
   } catch(e) {
     res.status(500).json({ error: e.message });
   }
@@ -751,13 +753,21 @@ app.get('/api/admin/products', verifyAdmin, async (req, res) => {
 // Admin: save product
 app.post('/api/admin/products', verifyAdmin, async (req, res) => {
   try {
-    const { product_id, name, price, status } = req.body;
-    if (product_id) {
-      await supabase.from('products').update({ name, price: parseInt(price), status }).eq('product_id', parseInt(product_id));
+    const { id, product_id, site_name, name, price, status } = req.body;
+    if (id) {
+      // Edit existing row
+      await supabase.from('site_prices')
+        .update({ name, price: parseInt(price), status, site_name })
+        .eq('id', parseInt(id));
     } else {
-      const { data: last } = await supabase.from('products').select('product_id').order('product_id', { ascending: false }).limit(1);
-      const nextId = last && last.length > 0 ? last[0].product_id + 1 : 1;
-      await supabase.from('products').insert({ product_id: nextId, name, price: parseInt(price), status });
+      // New row
+      await supabase.from('site_prices').insert({
+        product_id: parseInt(product_id),
+        site_name: sanitizeString(site_name, 50),
+        name: sanitizeString(name, 100),
+        price: parseInt(price),
+        status: status || 'active'
+      });
     }
     res.json({ success: true });
   } catch(e) {
