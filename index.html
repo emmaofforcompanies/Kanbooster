@@ -176,9 +176,17 @@
 
     <!-- Page 1: Products -->
     <div id="page-1" class="page active">
-      <div class="card">
-        <div class="card-title">📶 Select Your Plan</div>
-        <div id="products-loading" style="text-align:center; color:var(--text2); padding:20px 0; font-size:0.85rem;">
+  <div class="card">
+    <div class="card-title">📍 Select Your Site</div>
+    <label>Site</label>
+    <select id="site-select" onchange="onSiteChange(this.value)">
+      <option value="">-- Choose your site --</option>
+    </select>
+  </div>
+  <div id="products-section" style="display:none;">
+    <div class="card">
+      <div class="card-title">📶 Select Your Plan</div>
+      <div id="products-loading" style="text-align:center; color:var(--text2); padding:20px 0; font-size:0.85rem;">
           <span class="flicker">Loading available plans...</span>
         </div>
         <div id="products-grid" class="products-grid" style="display:none;"></div>
@@ -204,9 +212,6 @@
         <div class="card-title">📞 Your Details</div>
         <label>Phone Number</label>
         <input type="tel" id="phone-input" placeholder="e.g. 08012345678" maxlength="11">
-        <label>Site Name</label>
-        <input type="text" id="site-input" placeholder="Enter your site name">
-        <div id="site-error" style="display:none; color:var(--danger); font-size:0.8rem; margin-top:-10px; margin-bottom:10px;"></div>
         <button class="btn btn-primary" onclick="goToPage3()">Continue →</button>
         <button class="btn btn-secondary" onclick="goToPage1()">← Back</button>
       </div>
@@ -260,7 +265,7 @@
       <div class="card">
         <div class="voucher-display">
           <div class="success-icon">🎉</div>
-          <div class="voucher-label">Your WiFi Voucher Code</div>
+          <div id="voucher-product-name" style="font-size:0.85rem; color:var(--text2); margin-bottom:8px;"></div>
           <div class="voucher-code" id="voucher-display">—</div>
           <button class="voucher-copy-btn" onclick="copyVoucher()">📋 COPY CODE</button>
         </div>
@@ -377,13 +382,29 @@ async function apiPost(endpoint, data) {
 // ============================================
 // LOAD PRODUCTS
 // ============================================
+
+
+function onSiteChange(siteName) {
+  selectedProduct = null;
+  currentSite = null;
+  document.getElementById('btn-select-product').disabled = true;
+  document.querySelectorAll('.product-card').forEach(c => c.classList.remove('selected'));
+  if (!siteName) {
+    document.getElementById('products-section').style.display = 'none';
+    return;
+  }
+  currentSite = siteName.replace(/\s+/g, '').toLowerCase();
+  document.getElementById('products-section').style.display = 'block';
+  loadProducts(siteName);
+}
+
 async function loadProducts() {
   try {
     document.getElementById('products-loading').style.display = 'block';
     document.getElementById('products-grid').style.display = 'none';
     document.getElementById('no-products').style.display = 'none';
 
-    const { products } = await apiGet('/api/products');
+    const { products } = await apiGet(`/api/products?site=${encodeURIComponent(siteName)}`);
 
     if (!products || products.length === 0) {
       document.getElementById('products-loading').style.display = 'none';
@@ -429,35 +450,21 @@ function goToPage1() {
 }
 
 function goToPage2() {
-  if (!selectedProduct) return;
+  if (!selectedProduct || !currentSite) return;
   showPage('page-2');
   setStep(2);
 }
 
 async function goToPage3() {
   const phone = document.getElementById('phone-input').value.trim();
-  const siteName = document.getElementById('site-input').value.trim();
+  const siteName = document.getElementById('site-select').value;
 
   if (!phone || phone.length < 10) { alert('Please enter a valid phone number.'); return; }
-  if (!siteName) {
-    document.getElementById('site-error').textContent = 'Please enter your site name.';
-    document.getElementById('site-error').style.display = 'block';
-    return;
-  }
+  if (!siteName) { alert('Please go back and select a site first.'); return; }
 
-  showLoading('Validating...');
+  showLoading('Checking stock...');
 
   try {
-    // Validate site via server
-    const { valid } = await apiPost('/api/validate-site', { site_name: siteName });
-    if (!valid) {
-      hideLoading();
-      document.getElementById('site-error').textContent = 'Invalid site name. Please check and try again.';
-      document.getElementById('site-error').style.display = 'block';
-      return;
-    }
-    document.getElementById('site-error').style.display = 'none';
-
     // Check stock via server
     const { in_stock } = await apiPost('/api/check-stock', {
       product_id: selectedProduct.id,
@@ -666,12 +673,14 @@ function saveVoucherLocally(code) {
   localStorage.setItem('kb_voucher_time_' + identifierCode, Date.now().toString());
 }
 
-function showVoucher(code) {
+function showVoucher(code, productName) {
   document.getElementById('voucher-display').textContent = code;
+  document.getElementById('voucher-product-name').textContent = productName || selectedProduct?.name || '';
   showPage('page-4');
   setStep(4);
   document.getElementById('step-4').classList.add('done');
 }
+
 
 function copyVoucher() {
   const code = document.getElementById('voucher-display').textContent;
@@ -782,7 +791,8 @@ function resetBuy() {
   document.getElementById('waiting-card').style.display = 'none';
   document.querySelectorAll('.product-card').forEach(c => c.classList.remove('selected'));
   document.getElementById('phone-input').value = '';
-  document.getElementById('site-input').value = '';
+  document.getElementById('site-select').value = '';
+  document.getElementById('products-section').style.display = 'none';
   goToPage1();
 }
 
@@ -795,8 +805,17 @@ window.onload = async () => {
     const waitMins = parseInt(settings.auto_check_interval || '5') * 2;
     document.getElementById('support-phone-display').textContent = settings.support_phone || '';
     document.getElementById('support-wait-mins').textContent = waitMins;
-  } catch(e) { /* use defaults */ }
-  loadProducts();
+  } catch(e) {}
+
+  try {
+    const { sites } = await apiGet('/api/sites');
+    const sel = document.getElementById('site-select');
+    sites.forEach(s => {
+      const opt = document.createElement('option');
+      opt.value = s; opt.textContent = s;
+      sel.appendChild(opt);
+    });
+  } catch(e) {}
 };
 </script>
 </body>
