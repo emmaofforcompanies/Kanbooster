@@ -546,7 +546,7 @@ app.post('/api/retrieve-voucher', async (req, res) => {
       .eq('delivery_method', 'web')
       .gte('timestamp', cutoff)
       .order('timestamp', { ascending: false })
-      .limit(10);
+      .limit(3);
 
     if (!data || data.length === 0) {
       return res.json({ found: false });
