@@ -195,6 +195,27 @@ app.post('/api/validate-site', async (req, res) => {
   }
 });
 
+// Get list of valid site names
+app.get('/api/sites', async (req, res) => {
+  try {
+    const { data } = await supabase
+      .from('settings')
+      .select('setting_value')
+      .eq('setting_name', 'site_names')
+      .single();
+
+    const sites = data
+      ? data.setting_value.split(',').map(s => s.trim()).filter(Boolean)
+      : [];
+
+    res.json({ sites });
+  } catch(e) {
+    res.status(500).json({ error: 'Could not load sites' });
+  }
+});
+
+
+
 // Check stock
 app.post('/api/check-stock', async (req, res) => {
   try {
@@ -774,6 +795,26 @@ app.post('/api/admin/products', verifyAdmin, async (req, res) => {
     res.status(500).json({ error: e.message });
   }
 });
+
+// Admin: get site-specific products
+app.get('/api/admin/site-products', verifyAdmin, async (req, res) => {
+  try {
+    const siteName = sanitizeString(req.query.site || '', 50);
+    if (!siteName) return res.json({ products: [] });
+
+    const { data, error } = await supabase
+      .from('site_prices')
+      .select('*')
+      .ilike('site_name', siteName)
+      .order('product_id');
+
+    if (error) throw error;
+    res.json({ products: data || [] });
+  } catch(e) {
+    res.status(500).json({ error: e.message });
+  }
+});
+
 
 // ============================================
 // MANUAL DELIVER
