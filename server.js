@@ -132,7 +132,7 @@ function sanitizeString(str, maxLen = 200) {
 }
 
 function isValidPhone(phone) {
-  return /^(0|234|\+234)[789][01]\d{8}$/.test(phone.replace(/\s/g, ''));
+  return /^(0|234|\+234)[789][01]\d{8}$/.test(phone.replace(/[\s\-().]/g, ''));
 }
 
 function isValidIdentifier(code) {
