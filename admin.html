@@ -716,7 +716,8 @@ async function processCSV(file) {
 
   // Get valid products/sites from server
   const { products } = await apiGet('/api/admin/products');
-  const validIds = new Set(products.map(p => String(p.product_id)));
+const validIds = new Set(products.map(p => String(p.product_id)));
+// products now comes from site_prices so this still works
 
   uploadRows = [];
   const errors = [];
@@ -774,12 +775,46 @@ async function confirmUpload() {
 // ============================================
 // PRODUCTS
 // ============================================
-async function loadProductsTable() {
-  const tbody = document.getElementById('products-body');
+// ============================================
+// SITE LIST LOADER (used by products + manual deliver)
+// ============================================
+async function loadSiteList() {
   try {
-    const { products, site_prices } = await apiGet('/api/admin/products');
+    const { sites } = await apiGet('/api/sites');
+    // Populate site-filter dropdown
+    const sf = document.getElementById('site-filter');
+    const prev = sf.value;
+    sf.innerHTML = '<option value="">-- Choose a site --</option>' +
+      sites.map(s => `<option value="${s}">${s}</option>`).join('');
+    if (prev) sf.value = prev;
+
+    // Populate manual-site dropdown
+    const ms = document.getElementById('manual-site');
+    ms.innerHTML = '<option value="">Select site...</option>' +
+      sites.map(s => `<option value="${s}">${s}</option>`).join('');
+  } catch(e) { showToast('❌ Could not load sites', 'error'); }
+}
+
+async function loadSiteProducts(siteName) {
+  const tbody = document.getElementById('site-products-body');
+  const title = document.getElementById('site-products-title');
+  const addBtn = document.getElementById('btn-add-site-product');
+
+  if (!siteName) {
+    tbody.innerHTML = '<tr><td colspan="5" style="color:var(--text2); text-align:center;">Select a site above</td></tr>';
+    addBtn.style.display = 'none';
+    return;
+  }
+
+  title.textContent = `📋 Products — ${siteName}`;
+  addBtn.style.display = 'inline-block';
+  tbody.innerHTML = '<tr><td colspan="5" style="color:var(--text2); text-align:center;"><span class="spinner"></span></td></tr>';
+
+  try {
+    // Fetch all rows for this site (active + inactive)
+    const { products } = await apiGet(`/api/admin/site-products?site=${encodeURIComponent(siteName)}`);
     if (!products || products.length === 0) {
-      tbody.innerHTML = '<tr><td colspan="5" style="color:var(--text2); text-align:center;">No products</td></tr>';
+      tbody.innerHTML = '<tr><td colspan="5" style="color:var(--text2); text-align:center;">No products for this site yet</td></tr>';
       return;
     }
     tbody.innerHTML = products.map(p => `<tr>
@@ -787,53 +822,94 @@ async function loadProductsTable() {
       <td>${p.name}</td>
       <td style="color:var(--accent);">₦${parseInt(p.price).toLocaleString()}</td>
       <td>${p.status === 'active' ? '<span class="badge badge-green">active</span>' : '<span class="badge badge-grey">inactive</span>'}</td>
-      <td><button class="btn btn-sm btn-secondary" onclick="editProduct(${p.product_id},'${p.name}',${p.price},'${p.status}')">Edit</button></td>
+      <td>
+        <button class="btn btn-sm btn-secondary" onclick="editSiteProduct(${p.id},'${p.name}',${p.price},'${p.status}',${p.product_id})">Edit</button>
+      </td>
     </tr>`).join('');
-
-    const sel = document.getElementById('sp-product-id');
-    sel.innerHTML = products.map(p => `<option value="${p.product_id}">${p.name}</option>`).join('');
-  } catch(e) { tbody.innerHTML = `<tr><td colspan="5" style="color:var(--danger);">Error: ${e.message}</td></tr>`; }
+  } catch(e) {
+    tbody.innerHTML = `<tr><td colspan="5" style="color:var(--danger);">Error: ${e.message}</td></tr>`;
+  }
 }
 
-function editProduct(id, name, price, status) {
-  document.getElementById('prod-edit-id').value = id;
-  document.getElementById('prod-name').value = name;
-  document.getElementById('prod-price').value = price;
-  document.getElementById('prod-status').value = status;
-  showSection('products');
+function showAddSiteProductForm() {
+  clearSiteProductForm();
+  document.getElementById('site-product-form-title').textContent = '➕ Add Product to Site';
+  document.getElementById('site-product-form').style.display = 'block';
 }
 
-async function saveProduct() {
-  const name = document.getElementById('prod-name').value.trim();
-  const price = document.getElementById('prod-price').value;
-  const status = document.getElementById('prod-status').value;
-  const editId = document.getElementById('prod-edit-id').value.trim();
-  if (!name || !price) { showToast('❌ Fill in name and price', 'error'); return; }
+function editSiteProduct(id, name, price, status, productId) {
+  document.getElementById('sp-edit-id').value = id;
+  document.getElementById('sp-name').value = name;
+  document.getElementById('sp-price').value = price;
+  document.getElementById('sp-status').value = status;
+  document.getElementById('sp-product-id').value = productId;
+  document.getElementById('site-product-form-title').textContent = '✏️ Edit Product';
+  document.getElementById('site-product-form').style.display = 'block';
+  document.getElementById('site-product-form').scrollIntoView({ behavior: 'smooth' });
+}
+
+function clearSiteProductForm() {
+  document.getElementById('sp-edit-id').value = '';
+  document.getElementById('sp-name').value = '';
+  document.getElementById('sp-price').value = '';
+  document.getElementById('sp-product-id').value = '';
+  document.getElementById('sp-status').value = 'active';
+  document.getElementById('site-product-form').style.display = 'none';
+}
+
+async function saveSiteProduct() {
+  const id = document.getElementById('sp-edit-id').value;
+  const name = document.getElementById('sp-name').value.trim();
+  const price = document.getElementById('sp-price').value;
+  const status = document.getElementById('sp-status').value;
+  const productId = document.getElementById('sp-product-id').value;
+  const siteName = document.getElementById('site-filter').value;
+
+  if (!name || !price || !productId) { showToast('❌ Fill in all fields', 'error'); return; }
+  if (!siteName) { showToast('❌ Select a site first', 'error'); return; }
+
   try {
-    await apiPost('/api/admin/products', { product_id: editId || null, name, price, status });
-    showToast('✅ Product saved!', 'success');
-    document.getElementById('prod-name').value = '';
-    document.getElementById('prod-price').value = '';
-    document.getElementById('prod-edit-id').value = '';
-    loadProductsTable();
+    await apiPost('/api/admin/products', { id: id || null, product_id: productId, site_name: siteName, name, price, status });
+    showToast('✅ Saved!', 'success');
+    clearSiteProductForm();
+    loadSiteProducts(siteName);
   } catch(e) { showToast('❌ ' + e.message, 'error'); }
 }
 
-async function saveSitePrice() {
-  const productId = document.getElementById('sp-product-id').value;
-  const siteName = document.getElementById('sp-site').value.trim();
-  const price = document.getElementById('sp-price').value;
-  if (!siteName || !price) { showToast('❌ Fill all fields', 'error'); return; }
-  try {
-    // Use admin products endpoint — reuse server logic
-    await apiPost('/api/admin/products', { site_price: true, product_id: productId, site_name: siteName, price });
-    showToast('✅ Site price saved!', 'success');
-  } catch(e) {
-    // Fallback: direct setting via settings endpoint won't work for site_prices
-    // The server needs a dedicated endpoint — for now show info
-    showToast('⚠️ Use Supabase dashboard to set site prices directly for now', 'error');
-  }
+// For CSV upload validation — fetch all product_ids from site_prices
+async function loadProductsTable() {
+  // Now just loads site list
+  await loadSiteList();
 }
+
+async function populateManualProducts() {
+  const siteName = document.getElementById('manual-site').value;
+  if (!siteName) return;
+  try {
+    const { products } = await apiGet(`/api/admin/site-products?site=${encodeURIComponent(siteName)}`);
+    // Manual deliver doesn't need a plan selector since codes are per site
+    // But keep a plan selector for manual deliver if needed
+  } catch(e) {}
+}
+
+
+app.get('/api/admin/site-products', verifyAdmin, async (req, res) => {
+  try {
+    const siteName = sanitizeString(req.query.site || '', 50);
+    if (!siteName) return res.json({ products: [] });
+
+    const { data, error } = await supabase
+      .from('site_prices')
+      .select('*')
+      .ilike('site_name', siteName)
+      .order('product_id');
+
+    if (error) throw error;
+    res.json({ products: data || [] });
+  } catch(e) {
+    res.status(500).json({ error: e.message });
+  }
+});
 
 // ============================================
 // SETTINGS
