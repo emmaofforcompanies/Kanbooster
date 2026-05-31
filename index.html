@@ -182,6 +182,9 @@
   <input type="text" id="site-select" placeholder="Enter your site name">
   <div id="site-error" style="display:none; color:var(--danger); font-size:0.8rem; margin-top:-10px; margin-bottom:10px;"></div>
   <button class="btn btn-primary" onclick="onSiteSubmit()">Continue →</button>
+    <div style="margin-top:12px; font-size:0.78rem; color:var(--text2); text-align:center;">
+  Need help? Call <strong id="support-phone-display-1"></strong>
+</div>
 </div>
   <div id="products-section" style="display:none;">
     <div class="card">
@@ -214,6 +217,9 @@
         <input type="tel" id="phone-input" placeholder="e.g. 08012345678" maxlength="11">
         <button class="btn btn-primary" onclick="goToPage3()">Continue →</button>
         <button class="btn btn-secondary" onclick="goToPage1()">← Back</button>
+        <div style="margin-top:12px; font-size:0.78rem; color:var(--text2); text-align:center;">
+  Need help? Call <strong id="support-phone-display-2"></strong>
+</div>
       </div>
     </div>
 
@@ -268,6 +274,9 @@
           <div id="voucher-product-name" style="font-size:0.85rem; color:var(--text2); margin-bottom:8px;"></div>
           <div class="voucher-code" id="voucher-display">—</div>
           <button class="voucher-copy-btn" onclick="copyVoucher()">📋 COPY CODE</button>
+          <div style="margin-top:12px; font-size:0.78rem; color:var(--text2); text-align:center;">
+  Need help? Call <strong id="support-phone-display-4"></strong>
+</div>
         </div>
         <div class="divider"></div>
         <div class="alert alert-info" style="margin-bottom:0;">
@@ -409,7 +418,7 @@ async function onSiteSubmit() {
     document.getElementById('btn-select-product').disabled = true;
     document.querySelectorAll('.product-card').forEach(c => c.classList.remove('selected'));
     document.getElementById('products-section').style.display = 'block';
-    loadProducts(raw);
+    loadProducts(raw.replace(/\s+/g, ''));
   } catch(e) {
     hideLoading();
     errEl.textContent = 'Could not validate site. Please try again.';
@@ -474,7 +483,7 @@ function goToPage2() {
 
 async function goToPage3() {
   const phone = document.getElementById('phone-input').value.trim();
-  const siteName = document.getElementById('site-select').value;
+  const siteName = document.getElementById('site-select').value.replace(/\s+/g, '');
 
   if (!phone || phone.length < 10) { alert('Please enter a valid phone number.'); return; }
   if (!siteName) { alert('Please go back and select a site first.'); return; }
@@ -539,7 +548,7 @@ async function goToPage3() {
 // ============================================
 function openPayment() {
   const phone = currentPhone || document.getElementById('phone-input').value.trim();
-  const siteName = document.getElementById('site-select').value;
+  const siteName = document.getElementById('site-select').value.replace(/\s+/g, '');
 
   try {
     FlutterwaveCheckout({
@@ -821,10 +830,16 @@ window.onload = async () => {
   try {
     settings = await apiGet('/api/public-settings');
     const waitMins = parseInt(settings.auto_check_interval || '5') * 2;
-    document.getElementById('support-phone-display').textContent = settings.support_phone || '';
+    const phone = settings.support_phone || '';
+    document.getElementById('support-phone-display').textContent = phone;
+    document.getElementById('support-phone-display-1').textContent = phone;
+    document.getElementById('support-phone-display-2').textContent = phone;
+    document.getElementById('support-phone-display-4').textContent = phone;
     document.getElementById('support-wait-mins').textContent = waitMins;
   } catch(e) {}
 };
+
+  
 </script>
 </body>
 </html>
