@@ -819,17 +819,6 @@ app.get('/api/admin/site-products', verifyAdmin, async (req, res) => {
 // ============================================
 // MANUAL DELIVER
 // ============================================
-async function populateManualProducts() {
-  try {
-    const { products } = await apiGet('/api/admin/products');
-    const sel = document.getElementById('manual-product-id');
-    if (!sel) return;
-    sel.innerHTML = '<option value="">Select plan...</option>' +
-      products.filter(p => p.status === 'active')
-        .map(p => `<option value="${p.product_id}">${p.name} (₦${parseInt(p.price).toLocaleString()})</option>`)
-        .join('');
-  } catch(e) { /* ignore */ }
-}
 
 async function manualDeliver() {
   const productId = document.getElementById('manual-product-id').value;
