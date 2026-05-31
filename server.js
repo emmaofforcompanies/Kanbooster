@@ -192,8 +192,9 @@ app.post('/api/validate-site', async (req, res) => {
     const siteClean = siteName.toLowerCase().replace(/\s+/g, '');
     res.json({ valid: validSites.includes(siteClean) });
   } catch(e) {
-    res.status(500).json({ error: 'Validation error' });
-  }
+  console.error('validate-site error:', e);
+  res.status(500).json({ error: e.message });
+}
 });
 
 // Get list of valid site names
@@ -569,8 +570,9 @@ app.post('/api/retrieve-voucher', async (req, res) => {
       }))
     });
   } catch(e) {
-    res.status(500).json({ error: 'Retrieval failed' });
-  }
+  console.error('retrieve-voucher error:', e);
+  res.status(500).json({ error: e.message });
+}
 });
 
 // Get settings (only safe public ones)
