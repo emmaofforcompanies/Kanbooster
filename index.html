@@ -300,7 +300,7 @@
         <p style="font-size:0.85rem; color:var(--text2); margin-bottom:14px; line-height:1.6;">
           If our service was fast and smooth, please take 30 seconds to leave us a review. It helps us serve more customers like you!
         </p>
-        <a href="https://g.page/r/afri-eo/review" target="_blank" rel="noopener noreferrer"
+        <a href="#" id="review-link" target="_blank" rel="noopener noreferrer"
            style="display:block; width:100%; padding:12px; background:linear-gradient(135deg,#fbbf24,#f59e0b); border:none; border-radius:12px; color:#000; font-family:'Syne',sans-serif; font-weight:700; font-size:0.9rem; text-align:center; text-decoration:none; transition:all 0.2s; letter-spacing:0.5px;"
            onmouseover="this.style.transform='translateY(-1px)'"
            onmouseout="this.style.transform='translateY(0)'">
@@ -837,6 +837,9 @@ window.onload = async () => {
     document.getElementById('support-phone-display-2').textContent = phone;
     document.getElementById('support-phone-display-4').textContent = phone;
     document.getElementById('support-wait-mins').textContent = waitMins;
+    if (settings.review_link) {
+      document.getElementById('review-link').href = settings.review_link;
+    }
   } catch(e) {}
 };
 
