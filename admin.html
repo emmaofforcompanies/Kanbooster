@@ -262,37 +262,50 @@
       </div>
 
       <!-- PRODUCTS -->
-      <div class="section" id="section-products">
-        <div class="section-title">Manage Products</div>
-        <div class="card">
-          <div class="card-title">➕ Create / Edit Product</div>
-          <div class="form-row">
-            <div class="form-group"><label class="form-label">Product Name</label><input type="text" class="form-input" id="prod-name" placeholder="e.g. 1 Day Plan"></div>
-            <div class="form-group"><label class="form-label">Default Price (₦)</label><input type="number" class="form-input" id="prod-price" placeholder="500"></div>
-          </div>
-          <div class="form-row">
-            <div class="form-group"><label class="form-label">Status</label><select class="form-input" id="prod-status"><option value="active">Active</option><option value="inactive">Inactive</option></select></div>
-            <div class="form-group"><label class="form-label">Edit existing (Product ID)</label><input type="number" class="form-input" id="prod-edit-id" placeholder="Leave blank = new"></div>
-          </div>
-          <button class="btn btn-primary" onclick="saveProduct()">Save Product</button>
-        </div>
-        <div class="card">
-          <div class="card-title">📋 All Products</div>
-          <div class="table-wrap">
-            <table><thead><tr><th>ID</th><th>Name</th><th>Price</th><th>Status</th><th>Actions</th></tr></thead>
-            <tbody id="products-body"><tr><td colspan="5" style="color:var(--text2); text-align:center;">Loading...</td></tr></tbody></table>
-          </div>
-        </div>
-        <div class="card">
-          <div class="card-title">🌐 Site-Specific Prices</div>
-          <div class="form-row">
-            <div class="form-group"><label class="form-label">Product</label><select class="form-input" id="sp-product-id"></select></div>
-            <div class="form-group"><label class="form-label">Site Name</label><input type="text" class="form-input" id="sp-site" placeholder="e.g. Site1"></div>
-          </div>
-          <div class="form-group"><label class="form-label">Price (₦)</label><input type="number" class="form-input" id="sp-price" placeholder="450"></div>
-          <button class="btn btn-primary" onclick="saveSitePrice()">Save Site Price</button>
-        </div>
-      </div>
+<div class="section" id="section-products">
+  <div class="section-title">Manage Site Products</div>
+
+  <!-- Site selector -->
+  <div class="card">
+    <div class="card-title">📍 Select Site</div>
+    <div style="display:flex; gap:10px; align-items:center;">
+      <select class="filter-input" id="site-filter" onchange="loadSiteProducts(this.value)" style="min-width:180px;">
+        <option value="">-- Choose a site --</option>
+      </select>
+      <button class="btn btn-secondary" onclick="loadSiteList()">🔄 Refresh Sites</button>
+    </div>
+  </div>
+
+  <!-- Add/Edit form -->
+  <div class="card" id="site-product-form" style="display:none;">
+    <div class="card-title" id="site-product-form-title">➕ Add Product to Site</div>
+    <input type="hidden" id="sp-edit-id">
+    <div class="form-row">
+      <div class="form-group"><label class="form-label">Product Name</label><input type="text" class="form-input" id="sp-name" placeholder="e.g. 1 Day Plan"></div>
+      <div class="form-group"><label class="form-label">Product ID</label><input type="number" class="form-input" id="sp-product-id" placeholder="e.g. 1"></div>
+    </div>
+    <div class="form-row">
+      <div class="form-group"><label class="form-label">Price (₦)</label><input type="number" class="form-input" id="sp-price" placeholder="500"></div>
+      <div class="form-group"><label class="form-label">Status</label><select class="form-input" id="sp-status"><option value="active">Active</option><option value="inactive">Inactive</option></select></div>
+    </div>
+    <div style="display:flex; gap:8px;">
+      <button class="btn btn-primary" onclick="saveSiteProduct()">💾 Save</button>
+      <button class="btn btn-secondary" onclick="clearSiteProductForm()">✕ Cancel</button>
+    </div>
+  </div>
+
+  <!-- Products table for selected site -->
+  <div class="card">
+    <div class="card-title" id="site-products-title">📋 Products</div>
+    <div style="margin-bottom:12px;">
+      <button class="btn btn-primary btn-sm" onclick="showAddSiteProductForm()" id="btn-add-site-product" style="display:none;">➕ Add Product</button>
+    </div>
+    <div class="table-wrap">
+      <table><thead><tr><th>ID</th><th>Name</th><th>Price</th><th>Status</th><th>Actions</th></tr></thead>
+      <tbody id="site-products-body"><tr><td colspan="5" style="color:var(--text2); text-align:center;">Select a site above</td></tr></tbody></table>
+    </div>
+  </div>
+</div>
 
       <!-- SETTINGS -->
       <div class="section" id="section-settings">
@@ -320,7 +333,9 @@
       </div>
       <div class="form-group">
         <label class="form-label">Site Name</label>
-        <input type="text" class="form-input" id="manual-site" placeholder="e.g. site1">
+<select class="form-input" id="manual-site">
+  <option value="">Select site...</option>
+</select>
       </div>
     </div>
     <div class="form-row">
