@@ -840,6 +840,57 @@ app.get('/api/admin/pending', verifyAdmin, async (req, res) => {
   }
 });
 
+
+// Admin: manual deliver
+app.post('/api/admin/deliver', verifyAdmin, async (req, res) => {
+  try {
+    const { product_id, site_name, phone, amount_paid } = req.body;
+
+    if (!product_id || !site_name || !phone || !amount_paid) {
+      return res.status(400).json({ error: 'Missing required fields' });
+    }
+
+    const { data: sp } = await supabase
+      .from('site_prices')
+      .select('name, price')
+      .eq('product_id', String(product_id))
+      .ilike('site_name', site_name.replace(/\s+/g, ''))
+      .single();
+
+    if (!sp) return res.status(404).json({ error: 'Product not found for this site' });
+
+    const voucherCode = await assignVoucher(product_id, site_name);
+    if (!voucherCode) return res.status(404).json({ error: 'No voucher codes available for this product' });
+
+    const paymentCode = 'MANUAL-' + Date.now();
+    await supabase.from('web_transactions').insert({
+      phone: sanitizeString(phone, 15),
+      site_name: sanitizeString(site_name, 50),
+      product_id: String(product_id),
+      amount: parseFloat(amount_paid),
+      status: 'completed',
+      voucher_code: voucherCode,
+      payment_code: paymentCode,
+      delivery_method: 'manual',
+      timestamp: new Date().toISOString(),
+    });
+
+    res.json({
+      success: true,
+      voucher: voucherCode,
+      product_name: sp.name,
+      phone: sanitizeString(phone, 15),
+      amount: parseFloat(amount_paid),
+      site_name: sanitizeString(site_name, 50),
+      payment_code: paymentCode,
+    });
+  } catch(e) {
+    console.error('Manual deliver error:', e);
+    res.status(500).json({ error: e.message });
+  }
+});
+
+
 // ============================================
 // VOUCHER ASSIGNMENT (server-side)
 // ============================================
