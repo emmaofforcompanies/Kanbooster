@@ -613,46 +613,56 @@ async function verifyAdmin(req, res, next) {
 }
 
 // Admin login
+// Admin login
 app.post('/api/admin/login', async (req, res) => {
   try {
-    const username = (req.body.username || '').trim().replace(/\s+/g, '');
-const password = (req.body.password || '').trim();
-    console.log('Login attempt - username:', username, 'length:', username.length);
+    // Strip ALL whitespace and special chars from username, just trim password
+    const username = (req.body.username || '').replace(/\s+/g, '').substring(0, 50);
+    const password = (req.body.password || '').trim().substring(0, 100);
 
-    if (!username || !password) return res.status(400).json({ error: 'Missing credentials' });
+    if (!username || !password) {
+      return res.status(400).json({ error: 'Missing credentials' });
+    }
 
-    const { data, error } = await supabase.from('admin_users')
-      .select('*').eq('username', username).eq('password', password).eq('active', true).single();
+    console.log(`Login attempt — username: "${username}" password length: ${password.length}`);
 
-    if (error || !data) {
-      // Log failed attempt
-      console.warn(`Failed admin login attempt: ${username} from ${req.ip}`);
+    // Fetch by username only, then check password manually (case insensitive username)
+    const { data: users } = await supabase
+      .from('admin_users')
+      .select('*')
+      .ilike('username', username)
+      .eq('active', true);
+
+    const user = users && users.find(u => u.password === password);
+
+    if (!user) {
+      console.warn(`Failed login — username: "${username}" from ${req.ip}`);
       return res.status(401).json({ error: 'Invalid username or password' });
     }
 
-    // Create session token
     const crypto = require('crypto');
     const token = crypto.randomBytes(32).toString('hex');
-    const expiresAt = new Date(Date.now() + 8 * 60 * 60 * 1000); // 8 hours
+    const expiresAt = new Date(Date.now() + 8 * 60 * 60 * 1000);
 
     await supabase.from('admin_sessions').insert({
       token,
-      username,
+      username: user.username,
       created_at: new Date().toISOString(),
       expires_at: expiresAt.toISOString(),
     });
 
-    // Log login
     try {
-  await supabase.from('admin_logins').insert({
-    username, logged_in_at: new Date().toISOString(), ip: req.ip
-  });
-} catch(e) {}
+      await supabase.from('admin_logins').insert({
+        username: user.username,
+        logged_in_at: new Date().toISOString(),
+        ip: req.ip
+      });
+    } catch(e) {}
 
-    res.json({ success: true, token, username });
+    res.json({ success: true, token, username: user.username });
   } catch(e) {
     console.error('Admin login error:', e);
-    res.status(500).json({ error: 'Login failed' });
+    res.status(500).json({ error: 'Login failed: ' + e.message });
   }
 });
 
