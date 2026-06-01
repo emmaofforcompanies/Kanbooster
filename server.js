@@ -613,10 +613,11 @@ async function verifyAdmin(req, res, next) {
 }
 
 // Admin login
-app.post('/api/admin/login', loginLimiter, async (req, res) => {
+app.post('/api/admin/login', async (req, res) => {
   try {
-    const username = sanitizeString(req.body.username || '', 50);
-    const password = sanitizeString(req.body.password || '', 100);
+    const username = (req.body.username || '').trim().replace(/\s+/g, '');
+const password = (req.body.password || '').trim();
+    console.log('Login attempt - username:', username, 'length:', username.length);
 
     if (!username || !password) return res.status(400).json({ error: 'Missing credentials' });
 
