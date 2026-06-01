@@ -400,16 +400,15 @@ async function apiPost(endpoint, data) {
 // LOGIN
 // ============================================
 async function doLogin() {
-  const username = document.getElementById('login-username').value.trim();
+  const username = document.getElementById('login-username').value.replace(/\s+/g, '');
   const password = document.getElementById('login-password').value.trim();
   const btn = document.getElementById('login-btn');
-  const errEl = document.getElementById('login-error');
 
   if (!username || !password) { showLoginError('Please enter username and password.'); return; }
 
   btn.disabled = true;
   btn.textContent = 'Checking...';
-  errEl.style.display = 'none';
+  document.getElementById('login-error').style.display = 'none';
 
   try {
     const result = await apiPost('/api/admin/login', { username, password });
@@ -417,7 +416,7 @@ async function doLogin() {
     adminUsername = result.username;
     sessionStorage.setItem('kb_admin_token', adminToken);
     sessionStorage.setItem('kb_admin_username', adminUsername);
-    document.getElementById('admin-name-badge').textContent = username.toUpperCase();
+    document.getElementById('admin-name-badge').textContent = result.username.toUpperCase();
     document.getElementById('login-screen').style.display = 'none';
     document.getElementById('admin-screen').style.display = 'block';
     loadDashboard();
