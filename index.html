@@ -176,7 +176,7 @@
 
     <!-- Page 1: Products -->
     <div id="page-1" class="page active">
-  <div class="card">
+  <div class="card" id="site-input-card">
   <div class="card-title">📍 Enter Your Site Name</div>
   <label>Site Name</label>
   <input type="text" id="site-select" placeholder="Enter your site name" autocomplete="off" autocorrect="off" autocapitalize="none" spellcheck="false">
@@ -419,7 +419,8 @@ async function onSiteSubmit() {
     document.getElementById('btn-select-product').disabled = true;
     document.querySelectorAll('.product-card').forEach(c => c.classList.remove('selected'));
     document.getElementById('products-section').style.display = 'block';
-    loadProducts(raw.replace(/\s+/g, ''));
+document.getElementById('site-input-card').style.display = 'none';
+loadProducts(raw.replace(/\s+/g, ''));
   } catch(e) {
     hideLoading();
     errEl.textContent = 'Could not validate site. Please try again.';
@@ -819,8 +820,9 @@ function resetBuy() {
   document.querySelectorAll('.product-card').forEach(c => c.classList.remove('selected'));
   document.getElementById('phone-input').value = '';
   document.getElementById('site-select').value = '';
-  document.getElementById('site-error').style.display = 'none';
-  document.getElementById('products-section').style.display = 'none';
+document.getElementById('site-error').style.display = 'none';
+document.getElementById('products-section').style.display = 'none';
+document.getElementById('site-input-card').style.display = 'block';
   goToPage1();
 }
 
