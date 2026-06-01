@@ -374,7 +374,7 @@ async function apiGet(endpoint) {
   const res = await fetch(API + endpoint, {
     headers: adminToken ? { 'x-admin-token': adminToken } : {}
   });
-  if (res.status === 401) { doLogout(); throw new Error('Session expired'); }
+  if (res.status === 429) { throw new Error('Too many login attempts. Try again in 15 minutes.'); }
 if (res.status === 429) { throw new Error('Too many login attempts. Try again in 15 minutes.'); }
   const json = await res.json();
   if (!res.ok) throw new Error(json.error || 'Request failed');
@@ -390,7 +390,7 @@ async function apiPost(endpoint, data) {
     },
     body: JSON.stringify(data)
   });
-  if (res.status === 401) { doLogout(); throw new Error('Session expired'); }
+  if (res.status === 429) { throw new Error('Too many login attempts. Try again in 15 minutes.'); }
   const json = await res.json();
   if (!res.ok) throw new Error(json.error || 'Request failed');
   return json;
@@ -469,6 +469,76 @@ window.onload = () => {
   }
 };
 
+
+  
+// ============================================
+// Manual D|elivery
+// ============================================
+
+  
+async function manualDeliver() {
+  const productId = document.getElementById('manual-product-id').value;
+  const site = document.getElementById('manual-site').value.trim();
+  const phone = document.getElementById('manual-phone').value.trim();
+  const amount = document.getElementById('manual-amount').value.trim();
+  const resultEl = document.getElementById('manual-deliver-result');
+  const btn = document.getElementById('manual-deliver-btn');
+
+  if (!productId) { showToast('❌ Select a data plan', 'error'); return; }
+  if (!site) { showToast('❌ Enter site name', 'error'); return; }
+  if (!phone || phone.length < 10) { showToast('❌ Enter valid phone number', 'error'); return; }
+  if (!amount) { showToast('❌ Enter amount paid', 'error'); return; }
+
+  btn.disabled = true;
+  btn.textContent = '⏳ Processing...';
+  resultEl.style.display = 'none';
+
+  try {
+    const result = await apiPost('/api/admin/deliver', {
+      product_id: productId,
+      site_name: site,
+      phone: phone,
+      amount_paid: amount,
+    });
+
+    resultEl.style.display = 'block';
+    resultEl.innerHTML = `
+      <div class="alert alert-success">✅ Voucher delivered successfully!</div>
+      <div class="card" style="margin-bottom:0;">
+        <table style="width:100%; font-size:0.85rem;">
+          <tr><td style="color:var(--text2); padding:6px 0; width:100px;">Voucher</td>
+              <td style="font-family:'JetBrains Mono',monospace; font-size:1.1rem; color:var(--success);">${result.voucher}</td></tr>
+          <tr><td style="color:var(--text2); padding:6px 0;">Plan</td><td>${result.product_name}</td></tr>
+          <tr><td style="color:var(--text2); padding:6px 0;">Phone</td><td>${result.phone}</td></tr>
+          <tr><td style="color:var(--text2); padding:6px 0;">Amount</td><td style="color:var(--accent);">₦${parseFloat(result.amount).toLocaleString()}</td></tr>
+          <tr><td style="color:var(--text2); padding:6px 0;">Site</td><td>${result.site_name}</td></tr>
+          <tr><td style="color:var(--text2); padding:6px 0;">Ref</td>
+              <td style="font-family:'JetBrains Mono',monospace; font-size:0.72rem; color:var(--text2);">${result.payment_code}</td></tr>
+        </table>
+        <button class="btn btn-secondary btn-sm" style="margin-top:12px;"
+          onclick="navigator.clipboard.writeText('${result.voucher}').then(()=>showToast('✅ Code copied!','success'))">
+          📋 Copy Code
+        </button>
+      </div>`;
+
+    showToast('✅ Voucher delivered!', 'success');
+    document.getElementById('manual-product-id').value = '';
+    document.getElementById('manual-site').value = '';
+    document.getElementById('manual-phone').value = '';
+    document.getElementById('manual-amount').value = '';
+
+  } catch(e) {
+    resultEl.style.display = 'block';
+    resultEl.innerHTML = `<div class="alert alert-danger">❌ ${e.message}</div>`;
+    showToast('❌ ' + e.message, 'error');
+  }
+
+  btn.disabled = false;
+  btn.textContent = '🎟 Get & Deliver Code';
+}
+
+
+  
 // ============================================
 // NAVIGATION
 // ============================================
