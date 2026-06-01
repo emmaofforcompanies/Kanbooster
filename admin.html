@@ -105,7 +105,19 @@
   #toast.show { transform: translateY(0); opacity: 1; }
   #toast.success { border-color: rgba(34,197,94,0.4); color: #86efac; }
   #toast.error { border-color: rgba(239,68,68,0.4); color: #fca5a5; }
-  @media (max-width: 700px) { .settings-grid { grid-template-columns: 1fr; } .form-row { grid-template-columns: 1fr; } .sidebar { display: none; } .stats-grid { grid-template-columns: 1fr 1fr; } }
+  @media (max-width: 700px) {
+    .settings-grid { grid-template-columns: 1fr; }
+    .form-row { grid-template-columns: 1fr; }
+    .stats-grid { grid-template-columns: 1fr 1fr; }
+    .admin-body { flex-direction: column; }
+    .sidebar { width: 100%; height: auto; position: relative; top: 0; display: flex; flex-wrap: wrap; padding: 10px 8px; gap: 4px; border-right: none; border-bottom: 1px solid var(--border); }
+    .nav-section { display: none; }
+    .nav-item { padding: 7px 10px; font-size: 0.75rem; margin-bottom: 0; }
+    .main-content { padding: 14px; }
+    .topbar { padding: 0 14px; }
+    .filters { flex-direction: column; align-items: stretch; }
+    .filter-input { width: 100%; }
+  }
 </style>
 </head>
 <body>
