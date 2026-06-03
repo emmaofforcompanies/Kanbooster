@@ -590,21 +590,8 @@ async function loadBankAccount(bankAccountPromise) {
   document.getElementById('bank-details').style.display = 'none';
   document.getElementById('bank-error').style.display = 'none';
 
-  try {
+ try {
     const result = await bankAccountPromise;
-      ? await prefetchedPromise.then(pre => {
-          if (pre && pre.success) return pre;
-          return apiPost('/api/get-bank-account', {
-            identifier_code: identifierCode,
-            phone: phone || currentPhone,
-            amount: selectedProduct.price,
-          });
-        })
-      : await apiPost('/api/get-bank-account', {
-          identifier_code: identifierCode,
-          phone: phone || currentPhone,
-          amount: selectedProduct.price,
-        });
     document.getElementById('bank-name').textContent = result.bank_name;
     document.getElementById('bank-account-number').textContent = result.account_number;
     document.getElementById('bank-account-name').textContent = result.account_name;
