@@ -310,7 +310,11 @@ res.json({
   expires_at: meta?.transfer_expires_at || '',
 });
 
-
+  } catch(e) {
+    console.error('prefetch error:', e);
+    res.status(500).json({ error: e.message });
+  }
+});
 
 // Create transaction (purchase initiation)
 app.post('/api/create-transaction', purchaseLimiter, async (req, res) => {
