@@ -374,6 +374,8 @@ let selectedProduct = null;
 let identifierCode = null;
 let currentPhone = null;
 let currentSite = null;
+let prefetchIdentifier = null;
+let prefetchBankAccountPromise = null;
 let flwPublicKey = null;
 let deviceId = getDeviceId();
 let autoCheckTimer = null;
@@ -448,6 +450,13 @@ async function onSiteSubmit() {
     }
     selectedProduct = null;
     currentSite = raw.replace(/\s+/g, '').toLowerCase();
+    // ADD these lines immediately after:
+// Pre-generate bank account in background
+prefetchIdentifier = generateIdentifier();
+prefetchBankAccountPromise = apiPost('/api/create-transaction-prefetch', {
+  site_name: currentSite,
+  prefetch_id: prefetchIdentifier,
+}).catch(() => null); // silent fail — goToPage3 will create a fresh one if needed
     document.getElementById('btn-select-product').disabled = true;
     document.querySelectorAll('.product-card').forEach(c => c.classList.remove('selected'));
     document.getElementById('products-section').style.display = 'block';
@@ -535,52 +544,62 @@ async function goToPage3() {
       return;
     }
 
-    identifierCode = generateIdentifier();
     currentPhone = phone;
-    currentSite = siteName.replace(/\s+/g, '').toLowerCase();
+currentSite = siteName.replace(/\s+/g, '').toLowerCase();
 
-    const result = await apiPost('/api/create-transaction', {
-      phone,
-      site_name: siteName,
-      product_id: selectedProduct.id,
-      identifier_code: identifierCode,
-      device_id: deviceId,
-    });
+// Use prefetched identifier if available, else generate fresh
+identifierCode = prefetchIdentifier || generateIdentifier();
 
-    selectedProduct.price = result.amount;
-    selectedProduct.name = result.product_name;
+const result = await apiPost('/api/create-transaction', {
+  phone,
+  site_name: siteName,
+  product_id: selectedProduct.id,
+  identifier_code: identifierCode,
+  device_id: deviceId,
+});
 
-    localStorage.setItem('kb_last_identifier', identifierCode);
-    localStorage.setItem('kb_last_phone', phone);
+selectedProduct.price = result.amount;
+selectedProduct.name = result.product_name;
 
-    hideLoading();
-    showPage('page-3');
-    setStep(3);
+localStorage.setItem('kb_last_identifier', identifierCode);
+localStorage.setItem('kb_last_phone', phone);
 
-    // Load bank account details
-    loadBankAccount(phone, siteName);
+hideLoading();
+showPage('page-3');
+setStep(3);
 
-  } catch(e) {
-    hideLoading();
-    console.error('goToPage3 error:', e);
-    alert('Error: ' + e.message);
-  }
-}
+// Pass the already-in-flight promise — loadBankAccount will await it
+loadBankAccount(phone, siteName, prefetchBankAccountPromise);
+prefetchBankAccountPromise = null; // consume it
+prefetchIdentifier = null;
 
 // ============================================
 // OPEN FLUTTERWAVE
 // ============================================
-async function loadBankAccount(phone, siteName) {
+async function loadBankAccount(phone, siteName, prefetchedPromise = null) {
   document.getElementById('bank-loading').style.display = 'block';
   document.getElementById('bank-details').style.display = 'none';
   document.getElementById('bank-error').style.display = 'none';
 
   try {
-    const result = await apiPost('/api/get-bank-account', {
-      identifier_code: identifierCode,
-      phone: phone || currentPhone,
-      amount: selectedProduct.price,
-    });
+    // If a pre-flight request was started at site validation, await it now
+    // Otherwise make the call fresh (normal fallback)
+    const result = prefetchedPromise
+      ? await prefetchedPromise.then(pre => {
+          // pre-fetch gives us the bank account directly
+          if (pre && pre.success) return pre;
+          // pre-fetch failed — fall back to fresh call
+          return apiPost('/api/get-bank-account', {
+            identifier_code: identifierCode,
+            phone: phone || currentPhone,
+            amount: selectedProduct.price,
+          });
+        })
+      : await apiPost('/api/get-bank-account', {
+          identifier_code: identifierCode,
+          phone: phone || currentPhone,
+          amount: selectedProduct.price,
+        });
 
     document.getElementById('bank-name').textContent = result.bank_name;
     document.getElementById('bank-account-number').textContent = result.account_number;
