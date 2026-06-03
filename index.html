@@ -516,7 +516,8 @@ function goToPage2() {
   setStep(2);
 }
 
-async function goToPage3() {
+
+  async function goToPage3() {
   const phone = document.getElementById('phone-input').value.trim();
   const siteName = document.getElementById('site-select').value.replace(/\s+/g, '');
 
@@ -532,24 +533,34 @@ async function goToPage3() {
     });
     if (!in_stock) {
       hideLoading();
-      alert(`Sorry, ${selectedProduct.name} is currently out of stock. Please try again later.`);
+      alert(`Sorry, ${selectedProduct.name} is currently out of stock for ${siteName}. Please try again later.`);
       return;
     }
 
-    identifierCode = generateIdentifier();
     currentPhone = phone;
     currentSite = siteName.replace(/\s+/g, '').toLowerCase();
 
-    const result = await apiPost('/api/create-transaction', {
-      phone,
-      site_name: siteName,
-      product_id: selectedProduct.id,
-      identifier_code: identifierCode,
-      device_id: deviceId,
-    });
-
-    selectedProduct.price = result.amount;
-    selectedProduct.name = result.product_name;
+    if (prefetchedAccount && prefetchIdentifier) {
+      // Prefetch worked — update the transaction with the real phone number
+      identifierCode = prefetchIdentifier;
+      await apiPost('/api/update-transaction-phone', {
+        identifier_code: identifierCode,
+        phone: phone,
+        device_id: deviceId,
+      });
+    } else {
+      // No prefetch — create transaction normally
+      identifierCode = generateIdentifier();
+      const result = await apiPost('/api/create-transaction', {
+        phone,
+        site_name: siteName,
+        product_id: selectedProduct.id,
+        identifier_code: identifierCode,
+        device_id: deviceId,
+      });
+      selectedProduct.price = result.amount;
+      selectedProduct.name = result.product_name;
+    }
 
     localStorage.setItem('kb_last_identifier', identifierCode);
     localStorage.setItem('kb_last_phone', phone);
@@ -558,8 +569,16 @@ async function goToPage3() {
     showPage('page-3');
     setStep(3);
 
-    // Load bank account details
-    loadBankAccount(phone, siteName);
+    if (prefetchedAccount) {
+      // Display the already-fetched bank account instantly
+      displayBankAccount(prefetchedAccount);
+      prefetchedAccount = null;
+      prefetchIdentifier = null;
+      startAutoCheck();
+    } else {
+      // Fetch bank account now
+      loadBankAccount(phone, siteName);
+    }
 
   } catch(e) {
     hideLoading();
