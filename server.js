@@ -252,7 +252,7 @@ app.post('/api/create-transaction', purchaseLimiter, async (req, res) => {
     const identifierCode = sanitizeString(req.body.identifier_code || '', 30);
 
     // Validate inputs
-    if (!isValidPhone(phone)) return res.status(400).json({ error: 'Invalid phone number' });
+    if (phone !== 'prefetch' && !isValidPhone(phone)) return res.status(400).json({ error: 'Invalid phone number' });
     if (!productId) return res.status(400).json({ error: 'Invalid product' });
     if (!isValidIdentifier(identifierCode)) return res.status(400).json({ error: 'Invalid identifier' });
 
