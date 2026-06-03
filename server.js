@@ -298,21 +298,16 @@ app.post('/api/create-transaction-prefetch', async (req, res) => {
       return res.status(400).json({ error: bankAccount.message || 'Prefetch failed' });
     }
 
-    const meta = bankAccount.meta?.authorization;
-    res.json({
-      success: true,
-      bank_name: meta?.transfer_bank || '',
-      account_number: meta?.transfer_account || '',
-      account_name: meta?.transfer_note || 'KanBooster Payment',
-      amount: meta?.transfer_amount || PLACEHOLDER_AMOUNT,
-      note: meta?.transfer_note || '',
-      expires_at: meta?.transfer_expires_at || '',
-      prefetch_id: prefetchId,
-    });
-  } catch(e) {
-    console.error('prefetch error:', e);
-    res.status(500).json({ error: e.message });
-  }
+const meta = bankAccount.meta?.authorization;
+console.log('FLW bank transfer meta:', JSON.stringify(bankAccount.meta));
+res.json({
+  success: true,
+  bank_name: meta?.transfer_bank || meta?.bank_name || '',
+  account_number: meta?.transfer_account || '',
+  account_name: meta?.account_name || 'KanBooster Payment',
+  amount: meta?.transfer_amount || amount,
+  note: meta?.transfer_note || '',
+  expires_at: meta?.transfer_expires_at || '',
 });
 
 
