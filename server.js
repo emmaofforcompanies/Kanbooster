@@ -252,7 +252,7 @@ app.post('/api/create-transaction', purchaseLimiter, async (req, res) => {
     const identifierCode = sanitizeString(req.body.identifier_code || '', 30);
 
     // Validate inputs
-    if (phone !== 'prefetch' && !isValidPhone(phone)) return res.status(400).json({ error: 'Invalid phone number' });
+    if (!isValidPhone(phone)) return res.status(400).json({ error: 'Invalid phone number' });
     if (!productId) return res.status(400).json({ error: 'Invalid product' });
     if (!isValidIdentifier(identifierCode)) return res.status(400).json({ error: 'Invalid identifier' });
 
@@ -445,8 +445,8 @@ app.post('/api/confirm-payment', purchaseLimiter, async (req, res) => {
             resp.on('data', chunk => data += chunk);
             resp.on('end', () => resolve(JSON.parse(data)));
           });
-          r.on('error', reject);
-          r.end();
+          req2.on('error', reject);
+          req2.end();
         });
 
         if (verifyResponse.status === 'success') {
