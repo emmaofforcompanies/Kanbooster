@@ -503,9 +503,11 @@ async function loadProducts(siteName) {
 // ============================================
 // NAVIGATION
 // ============================================
-function goToPage1() {
-  showPage('page-1');
-  setStep(1);
+function goToPage2() {
+  if (!selectedProduct || !currentSite) return;
+  showPage('page-2');
+  setStep(2);
+  prefetchBankAccount();
 }
 
 function goToPage2() {
@@ -569,44 +571,81 @@ async function goToPage3() {
 // ============================================
 // OPEN FLUTTERWAVE
 // ============================================
+
+
+  function displayBankAccount(result) {
+  document.getElementById('bank-name').textContent = result.bank_name;
+  document.getElementById('bank-account-number').textContent = result.account_number;
+  document.getElementById('bank-account-name').textContent = result.account_name;
+  document.getElementById('bank-amount').textContent = `₦${parseInt(result.amount).toLocaleString()}`;
+  if (result.expires_at) {
+    const expiry = new Date(result.expires_at);
+    document.getElementById('bank-expiry').textContent = expiry.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+  } else {
+    document.getElementById('bank-expiry').textContent = '30 minutes';
+  }
+  document.getElementById('bank-loading').style.display = 'none';
+  document.getElementById('bank-details').style.display = 'block';
+  document.getElementById('bank-error').style.display = 'none';
+}
+
 async function loadBankAccount(phone, siteName) {
   document.getElementById('bank-loading').style.display = 'block';
   document.getElementById('bank-details').style.display = 'none';
   document.getElementById('bank-error').style.display = 'none';
-
   try {
     const result = await apiPost('/api/get-bank-account', {
       identifier_code: identifierCode,
       phone: phone || currentPhone,
       amount: selectedProduct.price,
     });
-
-    document.getElementById('bank-name').textContent = result.bank_name;
-    document.getElementById('bank-account-number').textContent = result.account_number;
-    document.getElementById('bank-account-name').textContent = result.account_name;
-    document.getElementById('bank-amount').textContent = `₦${parseInt(result.amount).toLocaleString()}`;
-
-    // Format expiry
-    if (result.expires_at) {
-      const expiry = new Date(result.expires_at);
-      document.getElementById('bank-expiry').textContent = expiry.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-    } else {
-      document.getElementById('bank-expiry').textContent = '30 minutes';
-    }
-
-    document.getElementById('bank-loading').style.display = 'none';
-    document.getElementById('bank-details').style.display = 'block';
-
-    // Start auto-check immediately
+    displayBankAccount(result);
     startAutoCheck();
-
   } catch(e) {
     document.getElementById('bank-loading').style.display = 'none';
     document.getElementById('bank-error-msg').textContent = e.message || 'Could not generate payment account. Please try again.';
     document.getElementById('bank-error').style.display = 'block';
   }
 }
+}
 
+let prefetchedAccount = null;
+let prefetchIdentifier = null;
+
+async function prefetchBankAccount() {
+  try {
+    prefetchedAccount = null;
+    prefetchIdentifier = generateIdentifier();
+
+    const siteName = document.getElementById('site-select').value.replace(/\s+/g, '');
+
+    // Create a temp transaction placeholder
+    const result = await apiPost('/api/create-transaction', {
+      phone: 'prefetch',
+      site_name: siteName,
+      product_id: selectedProduct.id,
+      identifier_code: prefetchIdentifier,
+      device_id: deviceId,
+    });
+
+    selectedProduct.price = result.amount;
+    selectedProduct.name = result.product_name;
+
+    // Now fetch the bank account in background
+    const account = await apiPost('/api/get-bank-account', {
+      identifier_code: prefetchIdentifier,
+      phone: '00000000000',
+      amount: selectedProduct.price,
+    });
+
+    prefetchedAccount = account;
+  } catch(e) {
+    // Silent fail — loadBankAccount will retry properly
+    prefetchedAccount = null;
+  }
+}
+
+  
 function copyAccountNumber() {
   const num = document.getElementById('bank-account-number').textContent;
   navigator.clipboard.writeText(num).then(() => {
