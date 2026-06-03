@@ -299,10 +299,10 @@ app.post('/api/create-transaction-prefetch', async (req, res) => {
     }
 
 const meta = bankAccount.meta?.authorization;
-console.log('FLW bank transfer meta:', JSON.stringify(bankAccount.meta));
-res.json({
-  success: true,
-  bank_name: meta?.transfer_bank || meta?.bank_name || '',
+    console.log('FLW FULL RESPONSE:', JSON.stringify(bankAccount, null, 2));
+    res.json({
+      success: true,
+      bank_name: meta?.transfer_bank || meta?.bank_name || meta?.flw_ref || '',
   account_number: meta?.transfer_account || '',
   account_name: meta?.account_name || 'KanBooster Payment',
   amount: meta?.transfer_amount || amount,
