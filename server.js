@@ -322,97 +322,6 @@ const product = { name: spProduct.name, price: finalPrice };
   }
 });
 
-// Update phone on prefetched transaction
-app.post('/api/update-transaction-phone', async (req, res) => {
-  try {
-    const identifierCode = sanitizeString(req.body.identifier_code || '', 30);
-    const phone = sanitizeString(req.body.phone || '', 15);
-    const deviceId = sanitizeString(req.body.device_id || '', 100);
-
-    if (!identifierCode || !isValidPhone(phone)) {
-      return res.status(400).json({ error: 'Invalid input' });
-    }
-
-    await supabase.from('web_transactions')
-      .update({ phone, recipient_phone: phone, device_id: deviceId })
-      .eq('payment_code', identifierCode)
-      .eq('phone', 'prefetch');
-
-    res.json({ success: true });
-  } catch(e) {
-    res.status(500).json({ error: e.message });
-  }
-});
-
-// Get Flutterwave temp bank account for direct bank transfer
-app.post('/api/get-bank-account', async (req, res) => {
-  try {
-    const identifierCode = sanitizeString(req.body.identifier_code || '', 30);
-    const phone = sanitizeString(req.body.phone || '', 15);
-    const amount = parseInt(req.body.amount);
-    const email = 'customer@kanbooster.website';
-
-    if (!identifierCode || !phone || !amount) {
-      return res.status(400).json({ error: 'Missing required fields' });
-    }
-
-    const https = require('https');
-    const payload = JSON.stringify({
-      tx_ref: identifierCode,
-      amount: amount,
-      currency: 'NGN',
-      email: email,
-      phone_number: phone,
-      fullname: 'KanBooster Customer',
-      is_permanent: false,
-    });
-
-    const bankAccount = await new Promise((resolve, reject) => {
-      const options = {
-        hostname: 'api.flutterwave.com',
-        path: '/v3/charges?type=bank_transfer',
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${process.env.FLW_SECRET_KEY}`,
-          'Content-Type': 'application/json',
-          'Content-Length': Buffer.byteLength(payload),
-        },
-      };
-
-      const r = https.request(options, (response) => {
-        let data = '';
-        response.on('data', chunk => data += chunk);
-        response.on('end', () => {
-          try { resolve(JSON.parse(data)); }
-          catch(e) { reject(new Error('Invalid response from Flutterwave')); }
-        });
-      });
-      r.on('error', reject);
-      r.write(payload);
-      r.end();
-    });
-
-    if (bankAccount.status !== 'success') {
-      console.error('FLW bank account error:', bankAccount);
-      return res.status(400).json({ error: bankAccount.message || 'Could not generate bank account' });
-    }
-
-    const meta = bankAccount.meta?.authorization;
-res.json({
-  success: true,
-  bank_name: meta?.transfer_bank || '',
-  account_number: meta?.transfer_account || '',
-  account_name: meta?.transfer_note || 'KanBooster Payment',
-  amount: meta?.transfer_amount || amount,
-  note: meta?.transfer_note || '',
-  expires_at: meta?.account_expiration || '',
-});
-  } catch(e) {
-    console.error('get-bank-account error:', e);
-    res.status(500).json({ error: e.message });
-  }
-});
-
 // Confirm payment and deliver voucher (called after FLW callback)
 app.post('/api/confirm-payment', purchaseLimiter, async (req, res) => {
   try {
@@ -445,8 +354,8 @@ app.post('/api/confirm-payment', purchaseLimiter, async (req, res) => {
             resp.on('data', chunk => data += chunk);
             resp.on('end', () => resolve(JSON.parse(data)));
           });
-          req2.on('error', reject);
-          req2.end();
+          r.on('error', reject);
+          r.end();
         });
 
         if (verifyResponse.status === 'success') {
@@ -565,8 +474,8 @@ return res.json({ status: 'completed', voucher: txn.voucher_code, product_name: 
             resp.on('data', chunk => d += chunk);
             resp.on('end', () => { try { resolve(JSON.parse(d)); } catch(e) { reject(e); } });
           });
-          r.on('error', reject);
-          r.end();
+          req2.on('error', reject);
+          req2.end();
         });
 
         console.log(`[status-poll] FLW search for ${identifierCode}:`, JSON.stringify(flwSearch?.data?.length), 'results');
