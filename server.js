@@ -378,7 +378,8 @@ app.post('/api/get-bank-account', async (req, res) => {
     }
 
     const meta = bankAccount.meta?.authorization;
-    res.json({
+console.log('FLW bank transfer response:', JSON.stringify(bankAccount, null, 2));
+res.json({
       success: true,
       bank_name: meta?.bank_name || '',
       account_number: meta?.transfer_account || '',
