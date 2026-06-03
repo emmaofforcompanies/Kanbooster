@@ -450,8 +450,9 @@ async function onSiteSubmit() {
     document.getElementById('btn-select-product').disabled = true;
     document.querySelectorAll('.product-card').forEach(c => c.classList.remove('selected'));
     document.getElementById('products-section').style.display = 'block';
-document.getElementById('site-input-card').style.display = 'none';
-loadProducts(raw.replace(/\s+/g, ''));
+    document.getElementById('site-input-card').style.display = 'none';
+    document.getElementById('page-1').classList.add('active');
+    loadProducts(raw.replace(/\s+/g, ''));
   } catch(e) {
     hideLoading();
     errEl.textContent = 'Could not validate site. Please try again.';
@@ -851,17 +852,18 @@ function setStep(n) {
 
 function switchTab(tab) {
   document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
-  document.querySelectorAll('.page[id^="tab-"]').forEach(p => p.classList.remove('active'));
+  document.getElementById('tab-buy').classList.remove('active');
+  document.getElementById('tab-retrieve').classList.remove('active');
   if (tab === 'buy') {
     document.querySelectorAll('.tab')[0].classList.add('active');
     document.getElementById('tab-buy').classList.add('active');
+    document.getElementById('page-1').classList.add('active');
   } else {
     document.querySelectorAll('.tab')[1].classList.add('active');
     document.getElementById('tab-retrieve').classList.add('active');
     document.getElementById('retrieve-result').style.display = 'none';
   }
 }
-
 function showLoading(text = 'Loading...') {
   document.getElementById('loading-text').textContent = text;
   document.getElementById('loading-overlay').classList.add('show');
