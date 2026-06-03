@@ -185,29 +185,31 @@
   Need help? Call <strong id="support-phone-display-1"></strong>
 </div>
 </div>
-  <div id="products-section" style="display:none;">
+<div id="products-section" style="display:none;">
     <div class="card">
       <div class="card-title">📶 Select Your Plan</div>
       <div id="products-loading" style="text-align:center; color:var(--text2); padding:20px 0; font-size:0.85rem;">
-          <span class="flicker">Loading available plans...</span>
-        </div>
-        <div id="products-grid" class="products-grid" style="display:none;"></div>
-        <div id="no-products" style="display:none; text-align:center; color:var(--text2); padding:20px 0; font-size:0.85rem;">
-          No plans available right now. Please try again later.
-        </div>
-        <button class="btn btn-primary" id="btn-select-product" onclick="goToPage2()" disabled>Continue →</button>
+        <span class="flicker">Loading available plans...</span>
       </div>
-      <div class="card">
-        <div class="card-title">ℹ️ How It Works</div>
-        <ol class="instructions">
-          <li>Select your preferred WiFi plan</li>
-          <li>Enter your phone number and site name</li>
-          <li>Complete payment — all fields auto-filled</li>
-          <li>Your voucher code appears instantly on screen</li>
-        </ol>
+      <div id="products-grid" class="products-grid" style="display:none;"></div>
+      <div id="no-products" style="display:none; text-align:center; color:var(--text2); padding:20px 0; font-size:0.85rem;">
+        No plans available right now. Please try again later.
       </div>
-      </div>
+      <button class="btn btn-primary" id="btn-select-product" onclick="goToPage2()" disabled>Continue →</button>
+    </div>
+    <div class="card">
+      <div class="card-title">ℹ️ How It Works</div>
+      <ol class="instructions">
+        <li>Select your preferred WiFi plan</li>
+        <li>Enter your phone number and site name</li>
+        <li>Complete payment — all fields auto-filled</li>
+        <li>Your voucher code appears instantly on screen</li>
+      </ol>
+    </div>
   </div>
+</div>
+
+    <!-- Page 2: Phone + Site -->
 
     <!-- Page 2: Phone + Site -->
     <div id="page-2" class="page">
