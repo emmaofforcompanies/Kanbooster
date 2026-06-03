@@ -354,8 +354,8 @@ app.post('/api/confirm-payment', purchaseLimiter, async (req, res) => {
             resp.on('data', chunk => data += chunk);
             resp.on('end', () => resolve(JSON.parse(data)));
           });
-          req2.on('error', reject);
-          req2.end();
+          r.on('error', reject);
+          r.end();
         });
 
         if (verifyResponse.status === 'success') {
@@ -474,8 +474,8 @@ return res.json({ status: 'completed', voucher: txn.voucher_code, product_name: 
             resp.on('data', chunk => d += chunk);
             resp.on('end', () => { try { resolve(JSON.parse(d)); } catch(e) { reject(e); } });
           });
-          r.on('error', reject);
-          r.end();
+          req2.on('error', reject);
+          req2.end();
         });
 
         console.log(`[status-poll] FLW search for ${identifierCode}:`, JSON.stringify(flwSearch?.data?.length), 'results');
