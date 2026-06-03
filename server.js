@@ -322,6 +322,77 @@ const product = { name: spProduct.name, price: finalPrice };
   }
 });
 
+
+
+// Get Flutterwave temp bank account for direct bank transfer
+app.post('/api/get-bank-account', async (req, res) => {
+  try {
+    const identifierCode = sanitizeString(req.body.identifier_code || '', 30);
+    const phone = sanitizeString(req.body.phone || '', 15);
+    const amount = parseInt(req.body.amount);
+    const email = 'customer@kanbooster.website';
+
+    if (!identifierCode || !phone || !amount) {
+      return res.status(400).json({ error: 'Missing required fields' });
+    }
+
+    const https = require('https');
+    const payload = JSON.stringify({
+      tx_ref: identifierCode,
+      amount: amount,
+      currency: 'NGN',
+      email: email,
+      phone_number: phone,
+      fullname: 'KanBooster Customer',
+      is_permanent: false,
+    });
+
+    const bankAccount = await new Promise((resolve, reject) => {
+      const options = {
+        hostname: 'api.flutterwave.com',
+        path: '/v3/charges?type=bank_transfer',
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${process.env.FLW_SECRET_KEY}`,
+          'Content-Type': 'application/json',
+          'Content-Length': Buffer.byteLength(payload),
+        },
+      };
+
+      const r = https.request(options, (response) => {
+        let data = '';
+        response.on('data', chunk => data += chunk);
+        response.on('end', () => {
+          try { resolve(JSON.parse(data)); }
+          catch(e) { reject(new Error('Invalid response from Flutterwave')); }
+        });
+      });
+      r.on('error', reject);
+      r.write(payload);
+      r.end();
+    });
+
+    if (bankAccount.status !== 'success') {
+      console.error('FLW bank account error:', bankAccount);
+      return res.status(400).json({ error: bankAccount.message || 'Could not generate bank account' });
+    }
+
+    const meta = bankAccount.meta?.authorization;
+    res.json({
+      success: true,
+      bank_name: meta?.bank_name || '',
+      account_number: meta?.transfer_account || '',
+      account_name: meta?.account_name || 'KanBooster Payment',
+      amount: meta?.transfer_amount || amount,
+      note: meta?.transfer_note || '',
+      expires_at: meta?.transfer_expires_at || '',
+    });
+  } catch(e) {
+    console.error('get-bank-account error:', e);
+    res.status(500).json({ error: e.message });
+  }
+});
+
 // Confirm payment and deliver voucher (called after FLW callback)
 app.post('/api/confirm-payment', purchaseLimiter, async (req, res) => {
   try {
