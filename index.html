@@ -451,12 +451,9 @@ async function onSiteSubmit() {
     selectedProduct = null;
     currentSite = raw.replace(/\s+/g, '').toLowerCase();
     // ADD these lines immediately after:
-// Pre-generate bank account in background
-prefetchIdentifier = generateIdentifier();
-prefetchBankAccountPromise = apiPost('/api/create-transaction-prefetch', {
-  site_name: currentSite,
-  prefetch_id: prefetchIdentifier,
-}).catch(() => null); // silent fail — goToPage3 will create a fresh one if needed
+// Pre-generate identifier only (bank account needs real phone+amount)
+    prefetchIdentifier = generateIdentifier();
+    prefetchBankAccountPromise = null; // silent fail — goToPage3 will create a fresh one if needed
     document.getElementById('btn-select-product').disabled = true;
     document.querySelectorAll('.product-card').forEach(c => c.classList.remove('selected'));
     document.getElementById('products-section').style.display = 'block';
@@ -572,6 +569,13 @@ setStep(3);
 loadBankAccount(phone, siteName, prefetchBankAccountPromise);
 prefetchBankAccountPromise = null; // consume it
 prefetchIdentifier = null;
+
+  } catch(e) {
+    hideLoading();
+    console.error('goToPage3 error:', e);
+    alert('Error: ' + e.message);
+  }
+}
 
 // ============================================
 // OPEN FLUTTERWAVE
