@@ -5,7 +5,6 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>KanBooster — WiFi Vouchers</title>
 <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
-<script src="https://checkout.flutterwave.com/v3.js"></script>
 <style>
   :root {
     --bg: #0a0e1a;
@@ -225,30 +224,63 @@
     </div>
 
     <!-- Page 3: Payment / Waiting -->
+    <!-- Page 3: Bank Transfer -->
     <div id="page-3" class="page">
-      <!-- Summary card (shown before payment) -->
+
+      <!-- Bank account card -->
       <div class="card" id="payment-summary-card">
-        <div class="card-title">💳 Order Summary</div>
-        <div style="margin-bottom:14px;">
-          <div style="display:flex; justify-content:space-between; font-size:0.85rem; color:var(--text2); margin-bottom:8px;">
-            <span>Plan</span><span id="summary-plan" style="color:var(--text);">—</span>
+        <div class="card-title">🏦 Bank Transfer Details</div>
+        <div id="bank-loading" style="text-align:center; padding:20px 0; color:var(--text2); font-size:0.85rem;">
+          <span class="flicker">Generating your payment account...</span>
+        </div>
+        <div id="bank-details" style="display:none;">
+          <div style="background:var(--surface2); border:1px solid var(--border); border-radius:12px; padding:16px; margin-bottom:14px;">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
+              <span style="font-size:0.75rem; color:var(--text2); letter-spacing:1px; text-transform:uppercase;">Bank</span>
+              <span id="bank-name" style="font-weight:600; color:var(--text);"></span>
+            </div>
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
+              <span style="font-size:0.75rem; color:var(--text2); letter-spacing:1px; text-transform:uppercase;">Account Number</span>
+              <div style="display:flex; align-items:center; gap:8px;">
+                <span id="bank-account-number" style="font-family:'JetBrains Mono',monospace; font-size:1.2rem; color:var(--accent); font-weight:700; letter-spacing:2px;"></span>
+                <button onclick="copyAccountNumber()" style="background:var(--border); border:none; border-radius:6px; color:var(--text); padding:4px 8px; cursor:pointer; font-size:0.75rem;">Copy</button>
+              </div>
+            </div>
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
+              <span style="font-size:0.75rem; color:var(--text2); letter-spacing:1px; text-transform:uppercase;">Account Name</span>
+              <span id="bank-account-name" style="color:var(--text); font-size:0.85rem;"></span>
+            </div>
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
+              <span style="font-size:0.75rem; color:var(--text2); letter-spacing:1px; text-transform:uppercase;">Amount</span>
+              <span id="bank-amount" style="color:var(--success); font-weight:700; font-size:1rem;"></span>
+            </div>
+            <div style="display:flex; justify-content:space-between; align-items:center;">
+              <span style="font-size:0.75rem; color:var(--text2); letter-spacing:1px; text-transform:uppercase;">Expires</span>
+              <span id="bank-expiry" style="color:var(--warning); font-size:0.85rem;"></span>
+            </div>
           </div>
-          <div style="display:flex; justify-content:space-between; font-size:0.85rem; color:var(--text2); margin-bottom:8px;">
-            <span>Site</span><span id="summary-site" style="color:var(--text);">—</span>
+          <div class="alert alert-info" style="margin-bottom:14px; font-size:0.82rem;">
+            ⚠️ Transfer the <strong>exact amount</strong> shown. Account expires in 30 minutes. Your voucher will appear automatically after transfer.
           </div>
-          <div style="display:flex; justify-content:space-between; font-size:0.95rem; font-weight:600;">
-            <span>Amount</span><span id="summary-amount" style="color:var(--accent);">—</span>
+          <button class="btn btn-success" onclick="checkPayment()" id="btn-check-payment">
+            ✅ I've Paid — Check Now
+          </button>
+          <button class="btn btn-secondary" onclick="goToPage2()" style="margin-top:8px;">← Back</button>
+          <div style="margin-top:12px; font-size:0.78rem; color:var(--text2); text-align:center;">
+            Need help? Call <strong id="support-phone-display"></strong>
           </div>
         </div>
-        <button class="btn btn-primary" onclick="openPayment()" id="btn-pay">🔐 Pay Now</button>
-        <button class="btn btn-secondary" onclick="goToPage2()">← Back</button>
+        <div id="bank-error" style="display:none;">
+          <div class="alert alert-danger" id="bank-error-msg"></div>
+          <button class="btn btn-secondary" onclick="goToPage2()">← Back</button>
+        </div>
       </div>
 
-      <!-- Waiting card (shown after payment initiated) -->
+      <!-- Waiting card (shown after I've Paid clicked) -->
       <div class="card" id="waiting-card" style="display:none;">
         <div class="waiting-card">
           <div class="waiting-spinner"></div>
-          <div class="waiting-title">Processing your payment...</div>
+          <div class="waiting-title">Confirming your payment...</div>
           <div class="waiting-sub">
             Your voucher code will appear here automatically.<br>
             This usually takes less than 30 seconds.<br><br>
@@ -257,8 +289,8 @@
           </div>
         </div>
         <div style="margin-top:20px; display:flex; flex-direction:column; gap:8px;">
-          <button class="btn btn-success" onclick="checkPayment()" id="btn-check-payment">
-            ✅ I've Paid — Check Now
+          <button class="btn btn-success" onclick="checkPayment()" id="btn-check-payment-2">
+            ✅ Check Again
           </button>
           <button class="btn btn-ghost" onclick="resetBuy()">
             ← Buy a Different Plan
@@ -493,18 +525,16 @@ async function goToPage3() {
   showLoading('Checking stock...');
 
   try {
-    // Check stock via server
     const { in_stock } = await apiPost('/api/check-stock', {
       product_id: selectedProduct.id,
       site_name: siteName,
     });
     if (!in_stock) {
       hideLoading();
-      alert(`Sorry, ${selectedProduct.name} is currently out of stock for ${siteName}. Please try again later.`);
+      alert(`Sorry, ${selectedProduct.name} is currently out of stock. Please try again later.`);
       return;
     }
 
-    // Create transaction via server
     identifierCode = generateIdentifier();
     currentPhone = phone;
     currentSite = siteName.replace(/\s+/g, '').toLowerCase();
@@ -517,8 +547,6 @@ async function goToPage3() {
       device_id: deviceId,
     });
 
-    // Server returns FLW public key and final price
-    flwPublicKey = result.flw_public_key;
     selectedProduct.price = result.amount;
     selectedProduct.name = result.product_name;
 
@@ -526,17 +554,11 @@ async function goToPage3() {
     localStorage.setItem('kb_last_phone', phone);
 
     hideLoading();
-
-    // Update summary
-    document.getElementById('summary-plan').textContent = selectedProduct.name;
-    document.getElementById('summary-site').textContent = siteName;
-    document.getElementById('summary-amount').textContent = `₦${selectedProduct.price.toLocaleString()}`;
-
     showPage('page-3');
     setStep(3);
 
-    // Auto open payment
-    openPayment();
+    // Load bank account details
+    loadBankAccount(phone, siteName);
 
   } catch(e) {
     hideLoading();
@@ -548,69 +570,50 @@ async function goToPage3() {
 // ============================================
 // OPEN FLUTTERWAVE
 // ============================================
-function openPayment() {
-  const phone = currentPhone || document.getElementById('phone-input').value.trim();
-  const siteName = document.getElementById('site-select').value.replace(/\s+/g, '');
+async function loadBankAccount(phone, siteName) {
+  document.getElementById('bank-loading').style.display = 'block';
+  document.getElementById('bank-details').style.display = 'none';
+  document.getElementById('bank-error').style.display = 'none';
 
   try {
-    FlutterwaveCheckout({
-      public_key: flwPublicKey,
-      tx_ref: identifierCode,
+    const result = await apiPost('/api/get-bank-account', {
+      identifier_code: identifierCode,
+      phone: phone || currentPhone,
       amount: selectedProduct.price,
-      currency: 'NGN',
-      payment_options: 'banktransfer',
-      customer: {
-        phone_number: phone,
-        name: 'N/A',
-        email: 'dontfill@none.com',
-      },
-      meta: {
-        identifier_password: identifierCode,
-        'Phone Number': phone,
-        site_name: siteName,
-      },
-      customizations: {
-        title: 'AfriEO Ltd - KanBooster WiFi',
-        description: selectedProduct.name,
-      },
-      callback: async function(response) {
-        console.log('FLW callback:', response);
-        if (response.status === 'successful' || response.status === 'completed') {
-          document.getElementById('payment-summary-card').style.display = 'none';
-          document.getElementById('waiting-card').style.display = 'block';
-
-          try {
-            const result = await apiPost('/api/confirm-payment', {
-              identifier_code: identifierCode,
-              flw_ref: response.flw_ref || response.transaction_id || '',
-              tx_ref: response.tx_ref || identifierCode,
-            });
-
-            if (result.success && result.voucher) {
-              if (autoCheckTimer) clearInterval(autoCheckTimer);
-              saveVoucherLocally(result.voucher);
-              showVoucher(result.voucher);
-            } else {
-              startAutoCheck();
-            }
-          } catch(e) {
-            console.error('confirm-payment error:', e);
-            startAutoCheck();
-          }
-        }
-      },
-      onclose: function() {
-        document.getElementById('payment-summary-card').style.display = 'none';
-        document.getElementById('waiting-card').style.display = 'block';
-        startAutoCheck();
-      }
     });
+
+    document.getElementById('bank-name').textContent = result.bank_name;
+    document.getElementById('bank-account-number').textContent = result.account_number;
+    document.getElementById('bank-account-name').textContent = result.account_name;
+    document.getElementById('bank-amount').textContent = `₦${parseInt(result.amount).toLocaleString()}`;
+
+    // Format expiry
+    if (result.expires_at) {
+      const expiry = new Date(result.expires_at);
+      document.getElementById('bank-expiry').textContent = expiry.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    } else {
+      document.getElementById('bank-expiry').textContent = '30 minutes';
+    }
+
+    document.getElementById('bank-loading').style.display = 'none';
+    document.getElementById('bank-details').style.display = 'block';
+
+    // Start auto-check immediately
+    startAutoCheck();
+
   } catch(e) {
-    console.error('FLW error:', e);
-    alert('Payment error: ' + e.message);
+    document.getElementById('bank-loading').style.display = 'none';
+    document.getElementById('bank-error-msg').textContent = e.message || 'Could not generate payment account. Please try again.';
+    document.getElementById('bank-error').style.display = 'block';
   }
 }
 
+function copyAccountNumber() {
+  const num = document.getElementById('bank-account-number').textContent;
+  navigator.clipboard.writeText(num).then(() => {
+    alert('Account number copied!');
+  });
+}
 // ============================================
 // CHECK PAYMENT (manual)
 // ============================================
