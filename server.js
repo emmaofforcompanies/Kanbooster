@@ -322,7 +322,27 @@ const product = { name: spProduct.name, price: finalPrice };
   }
 });
 
+// Update phone on prefetched transaction
+app.post('/api/update-transaction-phone', async (req, res) => {
+  try {
+    const identifierCode = sanitizeString(req.body.identifier_code || '', 30);
+    const phone = sanitizeString(req.body.phone || '', 15);
+    const deviceId = sanitizeString(req.body.device_id || '', 100);
 
+    if (!identifierCode || !isValidPhone(phone)) {
+      return res.status(400).json({ error: 'Invalid input' });
+    }
+
+    await supabase.from('web_transactions')
+      .update({ phone, recipient_phone: phone, device_id: deviceId })
+      .eq('payment_code', identifierCode)
+      .eq('phone', 'prefetch');
+
+    res.json({ success: true });
+  } catch(e) {
+    res.status(500).json({ error: e.message });
+  }
+});
 
 // Get Flutterwave temp bank account for direct bank transfer
 app.post('/api/get-bank-account', async (req, res) => {
