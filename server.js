@@ -243,6 +243,80 @@ app.post('/api/check-stock', async (req, res) => {
   }
 });
 
+// Pre-fetch: generate a bank account speculatively at site validation time.
+// The identifier is reserved here; /api/create-transaction will link phone+product later.
+app.post('/api/create-transaction-prefetch', async (req, res) => {
+  try {
+    const siteName = sanitizeString(req.body.site_name || '', 50).replace(/\s+/g, '').toLowerCase();
+    const prefetchId = sanitizeString(req.body.prefetch_id || '', 30);
+
+    if (!siteName || !isValidIdentifier(prefetchId)) {
+      return res.status(400).json({ error: 'Invalid prefetch params' });
+    }
+
+    // Use a placeholder phone/amount — the real values come later at create-transaction
+    // We just want Flutterwave to warm up the account
+    const PLACEHOLDER_PHONE = '08000000000';
+    const PLACEHOLDER_AMOUNT = 500; // smallest typical amount; will be replaced
+
+    const https = require('https');
+    const payload = JSON.stringify({
+      tx_ref: prefetchId,
+      amount: PLACEHOLDER_AMOUNT,
+      currency: 'NGN',
+      email: 'customer@kanbooster.website',
+      phone_number: PLACEHOLDER_PHONE,
+      fullname: 'KanBooster Customer',
+      is_permanent: false,
+    });
+
+    const bankAccount = await new Promise((resolve, reject) => {
+      const options = {
+        hostname: 'api.flutterwave.com',
+        path: '/v3/charges?type=bank_transfer',
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${process.env.FLW_SECRET_KEY}`,
+          'Content-Type': 'application/json',
+          'Content-Length': Buffer.byteLength(payload),
+        },
+      };
+      const r = https.request(options, (response) => {
+        let data = '';
+        response.on('data', chunk => data += chunk);
+        response.on('end', () => {
+          try { resolve(JSON.parse(data)); }
+          catch(e) { reject(new Error('Invalid FLW response')); }
+        });
+      });
+      r.on('error', reject);
+      r.write(payload);
+      r.end();
+    });
+
+    if (bankAccount.status !== 'success') {
+      return res.status(400).json({ error: bankAccount.message || 'Prefetch failed' });
+    }
+
+    const meta = bankAccount.meta?.authorization;
+    res.json({
+      success: true,
+      bank_name: meta?.bank_name || '',
+      account_number: meta?.transfer_account || '',
+      account_name: meta?.account_name || 'KanBooster Payment',
+      amount: meta?.transfer_amount || PLACEHOLDER_AMOUNT,
+      note: meta?.transfer_note || '',
+      expires_at: meta?.transfer_expires_at || '',
+      prefetch_id: prefetchId,
+    });
+  } catch(e) {
+    console.error('prefetch error:', e);
+    res.status(500).json({ error: e.message });
+  }
+});
+
+
+
 // Create transaction (purchase initiation)
 app.post('/api/create-transaction', purchaseLimiter, async (req, res) => {
   try {
