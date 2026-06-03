@@ -378,16 +378,15 @@ app.post('/api/get-bank-account', async (req, res) => {
     }
 
     const meta = bankAccount.meta?.authorization;
-console.log('FLW bank transfer response:', JSON.stringify(bankAccount, null, 2));
 res.json({
-      success: true,
-      bank_name: meta?.bank_name || '',
-      account_number: meta?.transfer_account || '',
-      account_name: meta?.account_name || 'KanBooster Payment',
-      amount: meta?.transfer_amount || amount,
-      note: meta?.transfer_note || '',
-      expires_at: meta?.transfer_expires_at || '',
-    });
+  success: true,
+  bank_name: meta?.transfer_bank || '',
+  account_number: meta?.transfer_account || '',
+  account_name: meta?.transfer_note || 'KanBooster Payment',
+  amount: meta?.transfer_amount || amount,
+  note: meta?.transfer_note || '',
+  expires_at: meta?.account_expiration || '',
+});
   } catch(e) {
     console.error('get-bank-account error:', e);
     res.status(500).json({ error: e.message });
