@@ -680,8 +680,17 @@ async function checkPayment() {
 
 function startAutoCheck() {
   if (autoCheckTimer) clearInterval(autoCheckTimer);
+  let checks = 0;
+  const maxChecks = parseInt(settings?.max_check_count || '10');
+
   autoCheckTimer = setInterval(async () => {
     if (!identifierCode) return;
+    checks++;
+    if (checks > maxChecks) {
+      clearInterval(autoCheckTimer);
+      alert(`⚠️ Could not confirm payment automatically. Please tap "I've Paid" or contact support: ${settings.support_phone || ''}`);
+      return;
+    }
     try {
       const result = await apiGet(`/api/transaction-status?code=${encodeURIComponent(identifierCode)}`);
       if (result.status === 'completed' && result.voucher) {
