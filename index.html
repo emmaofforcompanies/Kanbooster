@@ -5,6 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>KanBooster — WiFi Vouchers</title>
 <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<script src="https://checkout.flutterwave.com/v3.js"></script>
 <style>
   :root {
     --bg: #0a0e1a;
@@ -185,31 +186,29 @@
   Need help? Call <strong id="support-phone-display-1"></strong>
 </div>
 </div>
-<div id="products-section" style="display:none;">
+  <div id="products-section" style="display:none;">
     <div class="card">
       <div class="card-title">📶 Select Your Plan</div>
       <div id="products-loading" style="text-align:center; color:var(--text2); padding:20px 0; font-size:0.85rem;">
-        <span class="flicker">Loading available plans...</span>
+          <span class="flicker">Loading available plans...</span>
+        </div>
+        <div id="products-grid" class="products-grid" style="display:none;"></div>
+        <div id="no-products" style="display:none; text-align:center; color:var(--text2); padding:20px 0; font-size:0.85rem;">
+          No plans available right now. Please try again later.
+        </div>
+        <button class="btn btn-primary" id="btn-select-product" onclick="goToPage2()" disabled>Continue →</button>
       </div>
-      <div id="products-grid" class="products-grid" style="display:none;"></div>
-      <div id="no-products" style="display:none; text-align:center; color:var(--text2); padding:20px 0; font-size:0.85rem;">
-        No plans available right now. Please try again later.
+      <div class="card">
+        <div class="card-title">ℹ️ How It Works</div>
+        <ol class="instructions">
+          <li>Select your preferred WiFi plan</li>
+          <li>Enter your phone number and site name</li>
+          <li>Complete payment — all fields auto-filled</li>
+          <li>Your voucher code appears instantly on screen</li>
+        </ol>
       </div>
-      <button class="btn btn-primary" id="btn-select-product" onclick="goToPage2()" disabled>Continue →</button>
-    </div>
-    <div class="card">
-      <div class="card-title">ℹ️ How It Works</div>
-      <ol class="instructions">
-        <li>Select your preferred WiFi plan</li>
-        <li>Enter your phone number and site name</li>
-        <li>Complete payment — all fields auto-filled</li>
-        <li>Your voucher code appears instantly on screen</li>
-      </ol>
-    </div>
+      </div>
   </div>
-</div>
-
-    <!-- Page 2: Phone + Site -->
 
     <!-- Page 2: Phone + Site -->
     <div id="page-2" class="page">
@@ -224,64 +223,32 @@
 </div>
       </div>
     </div>
-    
-    <!-- Page 3: Bank Transfer -->
-    <div id="page-3" class="page">
 
-      <!-- Bank account card -->
+    <!-- Page 3: Payment / Waiting -->
+    <div id="page-3" class="page">
+      <!-- Summary card (shown before payment) -->
       <div class="card" id="payment-summary-card">
-        <div class="card-title">🏦 Bank Transfer Details</div>
-        <div id="bank-loading" style="text-align:center; padding:20px 0; color:var(--text2); font-size:0.85rem;">
-          <span class="flicker">Generating your payment account...</span>
-        </div>
-        <div id="bank-details" style="display:none;">
-          <div style="background:var(--surface2); border:1px solid var(--border); border-radius:12px; padding:16px; margin-bottom:14px;">
-            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
-              <span style="font-size:0.75rem; color:var(--text2); letter-spacing:1px; text-transform:uppercase;">Bank</span>
-              <span id="bank-name" style="font-weight:600; color:var(--text);"></span>
-            </div>
-            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
-              <span style="font-size:0.75rem; color:var(--text2); letter-spacing:1px; text-transform:uppercase;">Account Number</span>
-              <div style="display:flex; align-items:center; gap:8px;">
-                <span id="bank-account-number" style="font-family:'JetBrains Mono',monospace; font-size:1.2rem; color:var(--accent); font-weight:700; letter-spacing:2px;"></span>
-                <button onclick="copyAccountNumber()" style="background:var(--border); border:none; border-radius:6px; color:var(--text); padding:4px 8px; cursor:pointer; font-size:0.75rem;">Copy</button>
-              </div>
-            </div>
-            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
-              <span style="font-size:0.75rem; color:var(--text2); letter-spacing:1px; text-transform:uppercase;">Account Name</span>
-              <span id="bank-account-name" style="color:var(--text); font-size:0.85rem;"></span>
-            </div>
-            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
-              <span style="font-size:0.75rem; color:var(--text2); letter-spacing:1px; text-transform:uppercase;">Amount</span>
-              <span id="bank-amount" style="color:var(--success); font-weight:700; font-size:1rem;"></span>
-            </div>
-            <div style="display:flex; justify-content:space-between; align-items:center;">
-              <span style="font-size:0.75rem; color:var(--text2); letter-spacing:1px; text-transform:uppercase;">Expires</span>
-              <span id="bank-expiry" style="color:var(--warning); font-size:0.85rem;"></span>
-            </div>
+        <div class="card-title">💳 Order Summary</div>
+        <div style="margin-bottom:14px;">
+          <div style="display:flex; justify-content:space-between; font-size:0.85rem; color:var(--text2); margin-bottom:8px;">
+            <span>Plan</span><span id="summary-plan" style="color:var(--text);">—</span>
           </div>
-          <div class="alert alert-info" style="margin-bottom:14px; font-size:0.82rem;">
-            ⚠️ Transfer the <strong>exact amount</strong> shown. Account expires in 30 minutes. Your voucher will appear automatically after transfer.
+          <div style="display:flex; justify-content:space-between; font-size:0.85rem; color:var(--text2); margin-bottom:8px;">
+            <span>Site</span><span id="summary-site" style="color:var(--text);">—</span>
           </div>
-          <button class="btn btn-success" onclick="checkPayment()" id="btn-check-payment">
-            ✅ I've Paid — Check Now
-          </button>
-          <button class="btn btn-secondary" onclick="goToPage2()" style="margin-top:8px;">← Back</button>
-          <div style="margin-top:12px; font-size:0.78rem; color:var(--text2); text-align:center;">
-            Need help? Call <strong id="support-phone-display"></strong>
+          <div style="display:flex; justify-content:space-between; font-size:0.95rem; font-weight:600;">
+            <span>Amount</span><span id="summary-amount" style="color:var(--accent);">—</span>
           </div>
         </div>
-        <div id="bank-error" style="display:none;">
-          <div class="alert alert-danger" id="bank-error-msg"></div>
-          <button class="btn btn-secondary" onclick="goToPage2()">← Back</button>
-        </div>
+        <button class="btn btn-primary" onclick="openPayment()" id="btn-pay">🔐 Pay Now</button>
+        <button class="btn btn-secondary" onclick="goToPage2()">← Back</button>
       </div>
 
-      <!-- Waiting card (shown after I've Paid clicked) -->
+      <!-- Waiting card (shown after payment initiated) -->
       <div class="card" id="waiting-card" style="display:none;">
         <div class="waiting-card">
           <div class="waiting-spinner"></div>
-          <div class="waiting-title">Confirming your payment...</div>
+          <div class="waiting-title">Processing your payment...</div>
           <div class="waiting-sub">
             Your voucher code will appear here automatically.<br>
             This usually takes less than 30 seconds.<br><br>
@@ -290,8 +257,8 @@
           </div>
         </div>
         <div style="margin-top:20px; display:flex; flex-direction:column; gap:8px;">
-          <button class="btn btn-success" onclick="checkPayment()" id="btn-check-payment-2">
-            ✅ Check Again
+          <button class="btn btn-success" onclick="checkPayment()" id="btn-check-payment">
+            ✅ I've Paid — Check Now
           </button>
           <button class="btn btn-ghost" onclick="resetBuy()">
             ← Buy a Different Plan
@@ -452,9 +419,8 @@ async function onSiteSubmit() {
     document.getElementById('btn-select-product').disabled = true;
     document.querySelectorAll('.product-card').forEach(c => c.classList.remove('selected'));
     document.getElementById('products-section').style.display = 'block';
-    document.getElementById('site-input-card').style.display = 'none';
-    document.getElementById('page-1').classList.add('active');
-    loadProducts(raw.replace(/\s+/g, ''));
+document.getElementById('site-input-card').style.display = 'none';
+loadProducts(raw.replace(/\s+/g, ''));
   } catch(e) {
     hideLoading();
     errEl.textContent = 'Could not validate site. Please try again.';
@@ -506,15 +472,18 @@ async function loadProducts(siteName) {
 // ============================================
 // NAVIGATION
 // ============================================
+function goToPage1() {
+  showPage('page-1');
+  setStep(1);
+}
+
 function goToPage2() {
   if (!selectedProduct || !currentSite) return;
   showPage('page-2');
   setStep(2);
-  prefetchBankAccount();
 }
 
-
-  async function goToPage3() {
+async function goToPage3() {
   const phone = document.getElementById('phone-input').value.trim();
   const siteName = document.getElementById('site-select').value.replace(/\s+/g, '');
 
@@ -524,6 +493,7 @@ function goToPage2() {
   showLoading('Checking stock...');
 
   try {
+    // Check stock via server
     const { in_stock } = await apiPost('/api/check-stock', {
       product_id: selectedProduct.id,
       site_name: siteName,
@@ -534,48 +504,39 @@ function goToPage2() {
       return;
     }
 
+    // Create transaction via server
+    identifierCode = generateIdentifier();
     currentPhone = phone;
     currentSite = siteName.replace(/\s+/g, '').toLowerCase();
 
-    if (prefetchedAccount && prefetchIdentifier) {
-      // Prefetch worked — update the transaction with the real phone number
-      identifierCode = prefetchIdentifier;
-      await apiPost('/api/update-transaction-phone', {
-        identifier_code: identifierCode,
-        phone: phone,
-        device_id: deviceId,
-      });
-    } else {
-      // No prefetch — create transaction normally
-      identifierCode = generateIdentifier();
-      const result = await apiPost('/api/create-transaction', {
-        phone,
-        site_name: siteName,
-        product_id: selectedProduct.id,
-        identifier_code: identifierCode,
-        device_id: deviceId,
-      });
-      selectedProduct.price = result.amount;
-      selectedProduct.name = result.product_name;
-    }
+    const result = await apiPost('/api/create-transaction', {
+      phone,
+      site_name: siteName,
+      product_id: selectedProduct.id,
+      identifier_code: identifierCode,
+      device_id: deviceId,
+    });
+
+    // Server returns FLW public key and final price
+    flwPublicKey = result.flw_public_key;
+    selectedProduct.price = result.amount;
+    selectedProduct.name = result.product_name;
 
     localStorage.setItem('kb_last_identifier', identifierCode);
     localStorage.setItem('kb_last_phone', phone);
 
     hideLoading();
+
+    // Update summary
+    document.getElementById('summary-plan').textContent = selectedProduct.name;
+    document.getElementById('summary-site').textContent = siteName;
+    document.getElementById('summary-amount').textContent = `₦${selectedProduct.price.toLocaleString()}`;
+
     showPage('page-3');
     setStep(3);
 
-    if (prefetchedAccount) {
-      // Display the already-fetched bank account instantly
-      displayBankAccount(prefetchedAccount);
-      prefetchedAccount = null;
-      prefetchIdentifier = null;
-      startAutoCheck();
-    } else {
-      // Fetch bank account now
-      loadBankAccount(phone, siteName);
-    }
+    // Auto open payment
+    openPayment();
 
   } catch(e) {
     hideLoading();
@@ -587,86 +548,67 @@ function goToPage2() {
 // ============================================
 // OPEN FLUTTERWAVE
 // ============================================
+function openPayment() {
+  const phone = currentPhone || document.getElementById('phone-input').value.trim();
+  const siteName = document.getElementById('site-select').value.replace(/\s+/g, '');
 
-
-  function displayBankAccount(result) {
-  document.getElementById('bank-name').textContent = result.bank_name;
-  document.getElementById('bank-account-number').textContent = result.account_number;
-  document.getElementById('bank-account-name').textContent = result.account_name;
-  document.getElementById('bank-amount').textContent = `₦${parseInt(result.amount).toLocaleString()}`;
-  if (result.expires_at) {
-    const expiry = new Date(result.expires_at);
-    document.getElementById('bank-expiry').textContent = expiry.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-  } else {
-    document.getElementById('bank-expiry').textContent = '30 minutes';
-  }
-  document.getElementById('bank-loading').style.display = 'none';
-  document.getElementById('bank-details').style.display = 'block';
-  document.getElementById('bank-error').style.display = 'none';
-}
-
-async function loadBankAccount(phone, siteName) {
-  document.getElementById('bank-loading').style.display = 'block';
-  document.getElementById('bank-details').style.display = 'none';
-  document.getElementById('bank-error').style.display = 'none';
   try {
-    const result = await apiPost('/api/get-bank-account', {
-      identifier_code: identifierCode,
-      phone: phone || currentPhone,
+    FlutterwaveCheckout({
+      public_key: flwPublicKey,
+      tx_ref: identifierCode,
       amount: selectedProduct.price,
+      currency: 'NGN',
+      payment_options: 'banktransfer',
+      customer: {
+        phone_number: phone,
+        name: 'N/A',
+        email: 'dontfill@none.com',
+      },
+      meta: {
+        identifier_password: identifierCode,
+        'Phone Number': phone,
+        site_name: siteName,
+      },
+      customizations: {
+        title: 'AfriEO Ltd - KanBooster WiFi',
+        description: selectedProduct.name,
+      },
+      callback: async function(response) {
+        console.log('FLW callback:', response);
+        if (response.status === 'successful' || response.status === 'completed') {
+          document.getElementById('payment-summary-card').style.display = 'none';
+          document.getElementById('waiting-card').style.display = 'block';
+
+          try {
+            const result = await apiPost('/api/confirm-payment', {
+              identifier_code: identifierCode,
+              flw_ref: response.flw_ref || response.transaction_id || '',
+              tx_ref: response.tx_ref || identifierCode,
+            });
+
+            if (result.success && result.voucher) {
+              if (autoCheckTimer) clearInterval(autoCheckTimer);
+              saveVoucherLocally(result.voucher);
+              showVoucher(result.voucher);
+            } else {
+              startAutoCheck();
+            }
+          } catch(e) {
+            console.error('confirm-payment error:', e);
+            startAutoCheck();
+          }
+        }
+      },
+      onclose: function() {
+        document.getElementById('payment-summary-card').style.display = 'none';
+        document.getElementById('waiting-card').style.display = 'block';
+        startAutoCheck();
+      }
     });
-    displayBankAccount(result);
-    startAutoCheck();
   } catch(e) {
-    document.getElementById('bank-loading').style.display = 'none';
-    document.getElementById('bank-error-msg').textContent = e.message || 'Could not generate payment account. Please try again.';
-    document.getElementById('bank-error').style.display = 'block';
+    console.error('FLW error:', e);
+    alert('Payment error: ' + e.message);
   }
-}
-}
-
-let prefetchedAccount = null;
-let prefetchIdentifier = null;
-
-async function prefetchBankAccount() {
-  try {
-    prefetchedAccount = null;
-    prefetchIdentifier = generateIdentifier();
-
-    const siteName = document.getElementById('site-select').value.replace(/\s+/g, '');
-
-    // Create a temp transaction placeholder
-    const result = await apiPost('/api/create-transaction', {
-      phone: 'prefetch',
-      site_name: siteName,
-      product_id: selectedProduct.id,
-      identifier_code: prefetchIdentifier,
-      device_id: deviceId,
-    });
-
-    selectedProduct.price = result.amount;
-    selectedProduct.name = result.product_name;
-
-    // Now fetch the bank account in background
-    const account = await apiPost('/api/get-bank-account', {
-      identifier_code: prefetchIdentifier,
-      phone: '00000000000',
-      amount: selectedProduct.price,
-    });
-
-    prefetchedAccount = account;
-  } catch(e) {
-    // Silent fail — loadBankAccount will retry properly
-    prefetchedAccount = null;
-  }
-}
-
-  
-function copyAccountNumber() {
-  const num = document.getElementById('bank-account-number').textContent;
-  navigator.clipboard.writeText(num).then(() => {
-    alert('Account number copied!');
-  });
 }
 
 // ============================================
@@ -854,18 +796,17 @@ function setStep(n) {
 
 function switchTab(tab) {
   document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
-  document.getElementById('tab-buy').classList.remove('active');
-  document.getElementById('tab-retrieve').classList.remove('active');
+  document.querySelectorAll('.page[id^="tab-"]').forEach(p => p.classList.remove('active'));
   if (tab === 'buy') {
     document.querySelectorAll('.tab')[0].classList.add('active');
     document.getElementById('tab-buy').classList.add('active');
-    document.getElementById('page-1').classList.add('active');
   } else {
     document.querySelectorAll('.tab')[1].classList.add('active');
     document.getElementById('tab-retrieve').classList.add('active');
     document.getElementById('retrieve-result').style.display = 'none';
   }
 }
+
 function showLoading(text = 'Loading...') {
   document.getElementById('loading-text').textContent = text;
   document.getElementById('loading-overlay').classList.add('show');
