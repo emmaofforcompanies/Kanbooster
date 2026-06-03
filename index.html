@@ -506,17 +506,8 @@ async function loadProducts(siteName) {
 function goToPage2() {
   if (!selectedProduct || !currentSite) return;
   showPage('page-2');
-  setStep(3);
-  prefetchBankAccount().catch(() => {
-    prefetchedAccount = null;
-    prefetchIdentifier = null;
-  });
-}
-
-function goToPage2() {
-  if (!selectedProduct || !currentSite) return;
-  showPage('page-2');
   setStep(2);
+  prefetchBankAccount();
 }
 
 
