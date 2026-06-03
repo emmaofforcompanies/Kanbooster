@@ -565,8 +565,8 @@ return res.json({ status: 'completed', voucher: txn.voucher_code, product_name: 
             resp.on('data', chunk => d += chunk);
             resp.on('end', () => { try { resolve(JSON.parse(d)); } catch(e) { reject(e); } });
           });
-          req2.on('error', reject);
-          req2.end();
+          r.on('error', reject);
+          r.end();
         });
 
         console.log(`[status-poll] FLW search for ${identifierCode}:`, JSON.stringify(flwSearch?.data?.length), 'results');
