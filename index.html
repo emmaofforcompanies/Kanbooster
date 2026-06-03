@@ -561,14 +561,19 @@ selectedProduct.name = result.product_name;
 localStorage.setItem('kb_last_identifier', identifierCode);
 localStorage.setItem('kb_last_phone', phone);
 
+// Fire bank account request immediately — before showing page 3
+// so the API call is already in-flight (or done) when the UI renders
+const bankAccountPromise = apiPost('/api/get-bank-account', {
+  identifier_code: identifierCode,
+  phone: currentPhone,
+  amount: selectedProduct.price,
+});
+
 hideLoading();
 showPage('page-3');
 setStep(3);
 
-// Pass the already-in-flight promise — loadBankAccount will await it
-loadBankAccount(phone, siteName, prefetchBankAccountPromise);
-prefetchBankAccountPromise = null; // consume it
-prefetchIdentifier = null;
+loadBankAccount(bankAccountPromise);
 
   } catch(e) {
     hideLoading();
@@ -580,31 +585,14 @@ prefetchIdentifier = null;
 // ============================================
 // OPEN FLUTTERWAVE
 // ============================================
-async function loadBankAccount(phone, siteName, prefetchedPromise = null) {
+// REPLACE with:
+async function loadBankAccount(bankAccountPromise) {
   document.getElementById('bank-loading').style.display = 'block';
   document.getElementById('bank-details').style.display = 'none';
   document.getElementById('bank-error').style.display = 'none';
 
   try {
-    // If a pre-flight request was started at site validation, await it now
-    // Otherwise make the call fresh (normal fallback)
-    const result = prefetchedPromise
-      ? await prefetchedPromise.then(pre => {
-          // pre-fetch gives us the bank account directly
-          if (pre && pre.success) return pre;
-          // pre-fetch failed — fall back to fresh call
-          return apiPost('/api/get-bank-account', {
-            identifier_code: identifierCode,
-            phone: phone || currentPhone,
-            amount: selectedProduct.price,
-          });
-        })
-      : await apiPost('/api/get-bank-account', {
-          identifier_code: identifierCode,
-          phone: phone || currentPhone,
-          amount: selectedProduct.price,
-        });
-
+    const result = await bankAccountPromise;
     document.getElementById('bank-name').textContent = result.bank_name;
     document.getElementById('bank-account-number').textContent = result.account_number;
     document.getElementById('bank-account-name').textContent = result.account_name;
