@@ -542,7 +542,16 @@ app.post('/api/retrieve-voucher', async (req, res) => {
     if (!isValidPhone(phone)) return res.status(400).json({ error: 'Invalid phone' });
     if (!deviceId) return res.status(400).json({ error: 'Missing device ID' });
 
-    const cutoff = new Date(Date.now() - 48 * 60 * 60 * 1000).toISOString();
+    // Get Max_no_id window from settings (default 15 mins)
+    const { data: setting } = await supabase
+      .from('settings')
+      .select('setting_value')
+      .eq('setting_name', 'Max_no_id')
+      .single();
+    const noIdWindowMins = parseInt(setting?.setting_value || '15');
+    const noIdCutoff = new Date(Date.now() - noIdWindowMins * 60 * 1000).toISOString();
+
+    const cutoff = new Date(Date.now() - 60 * 24 * 60 * 60 * 1000).toISOString();
 
     const { data } = await supabase.from('web_transactions')
       .select('payment_code, voucher_code, amount, timestamp, site_name, device_id')
@@ -551,14 +560,18 @@ app.post('/api/retrieve-voucher', async (req, res) => {
       .eq('delivery_method', 'web')
       .gte('timestamp', cutoff)
       .order('timestamp', { ascending: false })
-      .limit(10);
+      .limit(3);
 
     if (!data || data.length === 0) {
       return res.json({ found: false });
     }
 
-    // Device check server-side
-    const matching = data.filter(t => t.device_id === deviceId);
+    // For each transaction — allow if within no-id window OR device matches
+    const matching = data.filter(t => {
+      const withinWindow = t.timestamp >= noIdCutoff;
+      const deviceMatch = t.device_id === deviceId;
+      return withinWindow || deviceMatch;
+    });
 
     if (matching.length === 0) {
       return res.json({ found: false, device_mismatch: true });
@@ -574,15 +587,15 @@ app.post('/api/retrieve-voucher', async (req, res) => {
       }))
     });
   } catch(e) {
-  console.error('retrieve-voucher error:', e);
-  res.status(500).json({ error: e.message });
-}
+    console.error('retrieve-voucher error:', e);
+    res.status(500).json({ error: e.message });
+  }
 });
 
 // Get settings (only safe public ones)
 app.get('/api/public-settings', async (req, res) => {
   try {
-    const SAFE_SETTINGS = ['support_phone', 'terms_link', 'tutorial_link', 'auto_check_interval', 'review_link'];
+    const SAFE_SETTINGS = ['support_phone', 'terms_link', 'tutorial_link', 'auto_check_interval', 'review_link', 'Max_no_id'];
     const { data } = await supabase.from('settings').select('*').in('setting_name', SAFE_SETTINGS);
     const result = {};
     if (data) data.forEach(s => { result[s.setting_name] = s.setting_value; });
