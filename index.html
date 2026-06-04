@@ -547,8 +547,6 @@ currentSite = siteName.replace(/\s+/g, '').toLowerCase();
 // Use prefetched identifier if available, else generate fresh
 identifierCode = prefetchIdentifier || generateIdentifier();
 
-// Run create-transaction first to get the real price, then immediately
-// fire get-bank-account — user sees page-3 while bank account loads
 const result = await apiPost('/api/create-transaction', {
   phone,
   site_name: siteName,
@@ -563,8 +561,8 @@ selectedProduct.name = result.product_name;
 localStorage.setItem('kb_last_identifier', identifierCode);
 localStorage.setItem('kb_last_phone', phone);
 
-// Start bank account fetch NOW — before hiding loader or showing page
-// By the time user reads the page, it will already be done
+// Fire bank account request immediately — before showing page 3
+// so the API call is already in-flight (or done) when the UI renders
 const bankAccountPromise = apiPost('/api/get-bank-account', {
   identifier_code: identifierCode,
   phone: currentPhone,
@@ -587,13 +585,12 @@ loadBankAccount(bankAccountPromise);
 // ============================================
 // OPEN FLUTTERWAVE
 // ============================================
-// REPLACE with:
 async function loadBankAccount(bankAccountPromise) {
   document.getElementById('bank-loading').style.display = 'block';
   document.getElementById('bank-details').style.display = 'none';
   document.getElementById('bank-error').style.display = 'none';
 
-  try {
+ try {
     const result = await bankAccountPromise;
     document.getElementById('bank-name').textContent = result.bank_name;
     document.getElementById('bank-account-number').textContent = result.account_number;
