@@ -122,11 +122,17 @@ app.use('/api/', apiLimiter);
 // SERVE STATIC FILES
 // ============================================
 app.use(express.static(path.join(__dirname), {
-  index: false, // don't auto-serve index
-  setHeaders: (res) => {
+  index: false,
+  setHeaders: (res, filePath) => {
     res.setHeader('X-Content-Type-Options', 'nosniff');
-    res.setHeader('X-Frame-Options', 'DENY');
     res.setHeader('Referrer-Policy', 'strict-origin-when-cross-origin');
+    if (filePath.endsWith('.mp4')) {
+      res.setHeader('Content-Type', 'video/mp4');
+      res.setHeader('Accept-Ranges', 'bytes');
+      // Don't block video from being used in same-origin page
+    } else {
+      res.setHeader('X-Frame-Options', 'DENY');
+    }
   }
 }));
 
