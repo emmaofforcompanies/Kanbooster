@@ -922,9 +922,17 @@ app.get('/api/admin/stats', verifyAdmin, async (req, res) => {
 // Admin: get stock
 app.get('/api/admin/stock', verifyAdmin, async (req, res) => {
   try {
-    const { data: products } = await supabase.from('site_prices').select('*').order('product_id');
+    const { data: productsRaw } = await supabase.from('site_prices').select('*').order('product_id');
     const { data: sitesSetting } = await supabase.from('settings').select('setting_value').eq('setting_name','site_names').single();
     const sites = sitesSetting ? sitesSetting.setting_value.split(',').map(s => s.trim()) : [];
+
+    // Deduplicate products by product_id — site_prices may have one row per site per product
+    const seen = new Set();
+    const products = (productsRaw || []).filter(p => {
+      if (seen.has(p.product_id)) return false;
+      seen.add(p.product_id);
+      return true;
+    });
 
     const stock = [];
     for (const p of products) {
