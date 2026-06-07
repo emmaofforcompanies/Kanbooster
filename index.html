@@ -141,6 +141,56 @@
     background: linear-gradient(135deg, rgba(251,191,36,0.05), rgba(0,212,255,0.05));
     border: 1px solid rgba(251,191,36,0.2);
   }
+
+
+
+/* Tutorial banner (returning users) */
+.tutorial-banner {
+  background: linear-gradient(135deg, rgba(0,212,255,0.08), rgba(124,58,237,0.08));
+  border: 1px solid rgba(0,212,255,0.2);
+  border-radius: 12px;
+  padding: 12px 16px;
+  margin-bottom: 16px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  cursor: pointer;
+  transition: border-color 0.2s;
+}
+.tutorial-banner:hover { border-color: var(--accent); }
+.tutorial-banner-icon { font-size: 1.4rem; flex-shrink: 0; }
+.tutorial-banner-text { font-size: 0.82rem; color: var(--text2); line-height: 1.4; }
+.tutorial-banner-text strong { color: var(--accent); display: block; font-size: 0.88rem; margin-bottom: 2px; }
+
+/* Tutorial modal */
+#tutorial-modal {
+  display: none; position: fixed; inset: 0;
+  background: rgba(0,0,0,0.88); z-index: 9999;
+  align-items: center; justify-content: center; padding: 16px;
+}
+#tutorial-modal.show { display: flex; }
+.tutorial-modal-box {
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: 16px; width: 100%; max-width: 500px; padding: 20px;
+}
+.tutorial-modal-title {
+  font-family: 'Syne', sans-serif; font-weight: 700;
+  color: var(--accent); margin-bottom: 4px; font-size: 1rem;
+}
+.tutorial-modal-sub { font-size: 0.8rem; color: var(--text2); margin-bottom: 14px; }
+.tutorial-video-wrap {
+  width: 100%; aspect-ratio: 16/9; border-radius: 10px;
+  overflow: hidden; background: #000; margin-bottom: 16px;
+}
+.tutorial-video-wrap iframe { width: 100%; height: 100%; display: block; border: none; }
+.tutorial-close-btn {
+  width: 100%; padding: 12px; background: var(--accent);
+  border: none; border-radius: 10px; color: #000;
+  font-family: 'Syne', sans-serif; font-weight: 700;
+  font-size: 0.9rem; cursor: pointer;
+}
+
+  
 </style>
 </head>
 <body>
@@ -165,7 +215,15 @@
   </div>
 
   <!-- BUY FLOW -->
+  <!-- BUY FLOW -->
   <div id="tab-buy" class="page active">
+    <div id="tutorial-banner" class="tutorial-banner" style="display:none;" onclick="openTutorial()">
+      <div class="tutorial-banner-icon">▶️</div>
+      <div class="tutorial-banner-text">
+        <strong>Watch how to buy data</strong>
+        Step-by-step video guide
+      </div>
+    </div>
     <div class="steps">
       <div class="step active" id="step-1"></div>
       <div class="step" id="step-2"></div>
@@ -864,10 +922,72 @@ window.onload = async () => {
     if (settings.review_link) {
       document.getElementById('review-link').href = settings.review_link;
     }
+    initTutorial();
   } catch(e) {}
 };
 
+
+
+// ============================================
+// TUTORIAL
+// ============================================
+function getTutorialUrl() {
+  const link = settings.tutorial_link || '';
+  if (!link) return '';
+  const ytMatch = link.match(/(?:youtube\.com\/watch\?v=|youtu\.be\/)([^&?/]+)/);
+  if (ytMatch) return `https://www.youtube.com/embed/${ytMatch[1]}?autoplay=1&mute=1&rel=0&modestbranding=1`;
+  return link;
+}
+
+function openTutorial() {
+  const url = getTutorialUrl();
+  if (!url) return;
+  document.getElementById('tutorial-iframe').src = url;
+  document.getElementById('tutorial-modal').classList.add('show');
+}
+
+function closeTutorial() {
+  document.getElementById('tutorial-modal').classList.remove('show');
+  document.getElementById('tutorial-iframe').src = ''; // stop video
+}
+
+function initTutorial() {
+  const url = getTutorialUrl();
+  if (!url) return;
+
+  const isFirst = !localStorage.getItem('kb_returning');
+
+  if (isFirst) {
+    // First time — pop up modal automatically after 1.5s
+    localStorage.setItem('kb_returning', '1');
+    setTimeout(() => openTutorial(), 1500);
+  } else {
+    // Returning — show small banner on left
+    document.getElementById('tutorial-banner').style.display = 'flex';
+  }
+}  
   
 </script>
+
+<!-- TUTORIAL MODAL (first time users) -->
+<div id="tutorial-modal">
+  <div class="tutorial-modal-box">
+    <div class="tutorial-modal-title">👋 Welcome to KanBooster!</div>
+    <div class="tutorial-modal-sub">Watch this quick guide before you buy your first voucher:</div>
+    <div class="tutorial-video-wrap">
+      <iframe id="tutorial-iframe" allowfullscreen allow="autoplay; encrypted-media"></iframe>
+    </div>
+    <button class="tutorial-close-btn" onclick="closeTutorial()">✅ Got it, let's go!</button>
+  </div>
+</div>
+
+<!-- TUTORIAL BANNER (returning users) — hidden by default, shown by JS -->
+  <div class="tutorial-banner-icon">▶️</div>
+  <div class="tutorial-banner-text">
+    <strong>Watch how to buy data</strong>
+    Step-by-step video guide
+  </div>
+</div>
+  
 </body>
 </html>
