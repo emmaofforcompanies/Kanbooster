@@ -698,7 +698,7 @@ app.post('/api/retrieve-voucher', async (req, res) => {
     const cutoff = new Date(Date.now() - 60 * 24 * 60 * 60 * 1000).toISOString();
 
     // First check for already-completed transactions
-    const { data } = await supabase.from('web_transactions')
+    let { data } = await supabase.from('web_transactions')
       .select('payment_code, voucher_code, amount, timestamp, site_name, device_id')
       .eq('phone', phone)
       .eq('status', 'completed')
