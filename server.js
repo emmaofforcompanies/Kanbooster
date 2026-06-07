@@ -46,9 +46,12 @@ app.use(helmet({
     styleSrc: ["'self'", "'unsafe-inline'", "https://fonts.googleapis.com"],
     fontSrc: ["'self'", "https://fonts.gstatic.com"],
     frameSrc: [
-  "https://checkout.flutterwave.com",
-  "https://checkout-v3-ui-prod.f4b-flutterwave.com",
-],
+      "https://checkout.flutterwave.com",
+      "https://checkout-v3-ui-prod.f4b-flutterwave.com",
+      "https://www.youtube.com",
+      "https://www.youtube-nocookie.com",
+      "https://drive.google.com",
+    ],
 connectSrc: [
   "'self'",
   "https://checkout.flutterwave.com",
