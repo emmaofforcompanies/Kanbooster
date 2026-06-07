@@ -697,19 +697,73 @@ app.post('/api/retrieve-voucher', async (req, res) => {
 
     const cutoff = new Date(Date.now() - 60 * 24 * 60 * 60 * 1000).toISOString();
 
+    // First check for already-completed transactions
     const { data } = await supabase.from('web_transactions')
       .select('payment_code, voucher_code, amount, timestamp, site_name, device_id')
       .eq('phone', phone)
       .eq('status', 'completed')
-      .eq('delivery_method', 'web')
       .gte('timestamp', cutoff)
       .order('timestamp', { ascending: false })
       .limit(3);
 
+    // Also check for pending transactions — user may have paid after closing browser
+    const { data: pending } = await supabase.from('web_transactions')
+      .select('*')
+      .eq('phone', phone)
+      .eq('status', 'pending')
+      .gte('timestamp', cutoff)
+      .order('timestamp', { ascending: false })
+      .limit(3);
+
+    // For each pending transaction, check FLW and complete it on the spot
+    if (pending && pending.length > 0) {
+      for (const txn of pending) {
+        try {
+          const flwSearch = await new Promise((resolve, reject) => {
+            const https = require('https');
+            const options = {
+              hostname: 'api.flutterwave.com',
+              path: `/v3/transactions?tx_ref=${encodeURIComponent(txn.payment_code)}`,
+              method: 'GET',
+              headers: { 'Authorization': `Bearer ${process.env.FLW_SECRET_KEY}` },
+            };
+            const r = https.request(options, (response) => {
+              let d = '';
+              response.on('data', chunk => d += chunk);
+              response.on('end', () => { try { resolve(JSON.parse(d)); } catch(e) { reject(e); } });
+            });
+            r.on('error', reject);
+            r.end();
+          });
+
+          const flwTxn = flwSearch?.data?.[0];
+          if (flwTxn && flwTxn.status === 'successful') {
+            // Payment confirmed — assign voucher now
+            const voucherCode = await assignVoucher(txn.product_id, txn.site_name);
+            if (voucherCode) {
+              await supabase.from('web_transactions').update({
+                status: 'completed',
+                voucher_code: voucherCode,
+                sent: 'delivered',
+                delivery_method: 'web',
+                flw_ref: flwTxn.flw_ref,
+                delivered_at: new Date().toISOString(),
+              }).eq('payment_code', txn.payment_code);
+
+              // Add to completed list so it shows up below
+              if (!data) data = [];
+              data.push({ ...txn, voucher_code: voucherCode, status: 'completed' });
+            }
+          }
+        } catch(e) {
+          console.error('retrieve: pending FLW check error:', e.message);
+        }
+      }
+    }
+
     if (!data || data.length === 0) {
       return res.json({ found: false });
     }
-
     // For each transaction — allow if within no-id window OR device matches
     const matching = data.filter(t => {
       const withinWindow = t.timestamp >= noIdCutoff;
