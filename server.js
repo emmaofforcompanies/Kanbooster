@@ -1040,6 +1040,7 @@ app.post('/api/admin/deliver', verifyAdmin, async (req, res) => {
       voucher_code: voucherCode,
       payment_code: paymentCode,
       delivery_method: 'manual',
+      sent: 'delivered',
       timestamp: new Date().toISOString(),
     });
 
