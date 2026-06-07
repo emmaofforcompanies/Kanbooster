@@ -527,8 +527,8 @@ async function manualDeliver() {
               <td style="font-family:'JetBrains Mono',monospace; font-size:0.72rem; color:var(--text2);">${result.payment_code}</td></tr>
         </table>
         <button class="btn btn-secondary btn-sm" style="margin-top:12px;"
-          onclick="navigator.clipboard.writeText('${result.voucher}').then(()=>showToast('✅ Code copied!','success'))">
-          📋 Copy Code
+          onclick="navigator.clipboard.writeText('Voucher Code: ${result.voucher}\nPlan: ${result.product_name}\nPhone: ${result.phone}\nSite: ${result.site_name}\nAmount Paid: ₦${parseInt(result.amount).toLocaleString()}').then(()=>showToast('✅ Message copied!','success'))">
+          📋 Copy Full Message
         </button>
       </div>`;
 
