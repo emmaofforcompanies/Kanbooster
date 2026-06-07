@@ -935,7 +935,7 @@ function getTutorialUrl() {
   const link = settings.tutorial_link || '';
   if (!link) return '';
   const ytMatch = link.match(/(?:youtube\.com\/watch\?v=|youtu\.be\/)([^&?/]+)/);
-  if (ytMatch) return `https://www.youtube.com/embed/${ytMatch[1]}?autoplay=1&mute=1&rel=0&modestbranding=1`;
+  if (ytMatch) return `https://www.youtube-nocookie.com/embed/${ytMatch[1]}?autoplay=1&mute=1&rel=0&modestbranding=1`;
   return link;
 }
 
