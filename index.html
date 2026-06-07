@@ -934,8 +934,10 @@ window.onload = async () => {
 function getTutorialUrl() {
   const link = settings.tutorial_link || '';
   if (!link) return '';
-  const ytMatch = link.match(/(?:youtube\.com\/watch\?v=|youtu\.be\/)([^&?/]+)/);
+  const ytMatch = link.match(/(?:youtube\.com\/watch\?v=|youtu\.be\/|youtube\.com\/shorts\/)([^&?/]+)/);
   if (ytMatch) return `https://www.youtube-nocookie.com/embed/${ytMatch[1]}?autoplay=1&mute=1&rel=0&modestbranding=1`;
+  const driveMatch = link.match(/\/file\/d\/([^/]+)/);
+  if (driveMatch) return `https://drive.google.com/file/d/${driveMatch[1]}/preview`;
   return link;
 }
 
