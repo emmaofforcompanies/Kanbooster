@@ -697,6 +697,7 @@ app.post('/api/retrieve-voucher', async (req, res) => {
 
     // Get Max_no_id window from settings (default 15 mins)
     const cutoff = new Date(Date.now() - 15 * 60 * 1000).toISOString(); // 15 mins only
+    const pendingCutoff = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString(); // 24hrs — pending FLW check
 
     // First check for already-completed transactions
     let { data } = await supabase.from('web_transactions')
@@ -712,7 +713,7 @@ app.post('/api/retrieve-voucher', async (req, res) => {
       .select('*')
       .eq('phone', phone)
       .eq('status', 'pending')
-      .gte('timestamp', cutoff)
+      .gte('timestamp', pendingCutoff)
       .order('timestamp', { ascending: false })
       .limit(3);
 
