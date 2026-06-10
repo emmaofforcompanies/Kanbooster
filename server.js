@@ -696,15 +696,7 @@ app.post('/api/retrieve-voucher', async (req, res) => {
     if (!deviceId) return res.status(400).json({ error: 'Missing device ID' });
 
     // Get Max_no_id window from settings (default 15 mins)
-    const { data: setting } = await supabase
-      .from('settings')
-      .select('setting_value')
-      .eq('setting_name', 'Max_no_id')
-      .single();
-    const noIdWindowMins = parseInt(setting?.setting_value || '15');
-    const noIdCutoff = new Date(Date.now() - noIdWindowMins * 60 * 1000).toISOString();
-
-    const cutoff = new Date(Date.now() - 60 * 24 * 60 * 60 * 1000).toISOString();
+    const cutoff = new Date(Date.now() - 15 * 60 * 1000).toISOString(); // 15 mins only
 
     // First check for already-completed transactions
     let { data } = await supabase.from('web_transactions')
@@ -773,12 +765,8 @@ app.post('/api/retrieve-voucher', async (req, res) => {
     if (!data || data.length === 0) {
       return res.json({ found: false });
     }
-    // For each transaction — allow if within no-id window OR device matches
-    const matching = data.filter(t => {
-      const withinWindow = t.timestamp >= noIdCutoff;
-      const deviceMatch = t.device_id === deviceId;
-      return withinWindow || deviceMatch;
-    });
+    // Device must always match — no exceptions
+    const matching = data.filter(t => t.device_id === deviceId);
 
     if (matching.length === 0) {
       return res.json({ found: false, device_mismatch: true });
