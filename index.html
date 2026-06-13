@@ -957,23 +957,6 @@ async function checkBalance() {
   }
 }
 
-    resultEl.innerHTML = `
-      <div class="card">
-        <div class="alert alert-info" style="margin-bottom:12px;">
-          ⚠️ This link only works while connected to KanBooster WiFi.
-        </div>
-        <a href="${data.balance_url}" class="btn btn-primary" style="display:block; text-align:center; text-decoration:none;">
-          ▶️ Track Balance
-        </a>
-      </div>`;
-  } catch(e) {
-    resultEl.innerHTML = `
-      <div class="card">
-        <div class="alert alert-error">⚠️ Something went wrong. Try again.</div>
-      </div>`;
-  }
-}
-
 function showLoading(text = 'Loading...') {
   document.getElementById('loading-text').textContent = text;
   document.getElementById('loading-overlay').classList.add('show');
