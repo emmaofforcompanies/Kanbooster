@@ -77,6 +77,9 @@ app.use(cors({
   origin: function(origin, callback) {
     if (!origin || allowedOrigins.includes(origin)) {
       callback(null, true);
+    } else if (/^http:\/\/192\.168\.\d+\.\d+(:\d+)?$/.test(origin)) {
+      // Allow requests from the local Omada portal page (any 192.168.x.x address)
+      callback(null, true);
     } else {
       callback(new Error('Not allowed by CORS'));
     }
