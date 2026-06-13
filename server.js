@@ -205,13 +205,15 @@ app.post('/api/save-balance-link', async (req, res) => {
   res.setHeader('Access-Control-Allow-Origin', '*');
   try {
     const voucherCode = sanitizeString(req.body.voucher_code || '', 30);
-    const balanceUrl = sanitizeString(req.body.balance_url || '', 500);
-    if (!voucherCode || !balanceUrl) {
+    const balancePath = sanitizeString(req.body.balance_path || '', 500);
+    const siteName = sanitizeString(req.body.site_name || '', 50);
+    if (!voucherCode || !balancePath || !siteName) {
       return res.status(400).json({ error: 'Missing fields' });
     }
     await supabase.from('voucher_balance_links').upsert({
       voucher_code: voucherCode,
-      balance_url: balanceUrl,
+      balance_path: balancePath,
+      site_name: siteName,
       updated_at: new Date().toISOString(),
     }, { onConflict: 'voucher_code' });
     res.json({ success: true });
@@ -225,12 +227,23 @@ app.post('/api/get-balance-link', async (req, res) => {
   try {
     const voucherCode = sanitizeString(req.body.voucher_code || '', 30);
     if (!voucherCode) return res.status(400).json({ error: 'Voucher code required' });
-    const { data } = await supabase.from('voucher_balance_links')
-      .select('balance_url, updated_at')
+
+    const { data: link } = await supabase.from('voucher_balance_links')
+      .select('balance_path, site_name, updated_at')
       .eq('voucher_code', voucherCode)
       .single();
-    if (!data) return res.json({ found: false });
-    res.json({ found: true, balance_url: data.balance_url, updated_at: data.updated_at });
+
+    if (!link) return res.json({ found: false });
+
+    const { data: config } = await supabase.from('site_balance_config')
+      .select('balance_url')
+      .eq('site_name', link.site_name)
+      .single();
+
+    if (!config) return res.json({ found: false });
+
+    const fullUrl = config.balance_url.replace(/\/$/, '') + link.balance_path;
+    res.json({ found: true, balance_url: fullUrl, updated_at: link.updated_at });
   } catch(e) {
     res.json({ found: false });
   }
