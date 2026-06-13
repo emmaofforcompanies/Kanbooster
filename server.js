@@ -142,6 +142,13 @@ app.use(express.static(path.join(__dirname), {
 // ============================================
 // INPUT VALIDATION HELPERS
 // ============================================
+
+
+function normalizeSiteName(s) {
+  return (s || '').toLowerCase().replace(/\s+/g, '');
+}
+
+
 function sanitizeString(str, maxLen = 200) {
   if (!str || typeof str !== 'string') return '';
   return str.trim().substring(0, maxLen).replace(/[<>\"']/g, '');
@@ -206,7 +213,7 @@ app.post('/api/save-balance-link', async (req, res) => {
   try {
     const voucherCode = sanitizeString(req.body.voucher_code || '', 30);
     const balancePath = sanitizeString(req.body.balance_path || '', 500);
-    const siteName = sanitizeString(req.body.site_name || '', 50);
+    const siteName = normalizeSiteName(sanitizeString(req.body.site_name || '', 50));
     if (!voucherCode || !balancePath || !siteName) {
       return res.status(400).json({ error: 'Missing fields' });
     }
@@ -226,7 +233,7 @@ app.post('/api/save-balance-link', async (req, res) => {
 app.post('/api/get-balance-link', async (req, res) => {
   try {
     const voucherCode = sanitizeString(req.body.voucher_code || '', 30);
-    const confirmedSite = sanitizeString(req.body.site_name || '', 50);
+    const confirmedSite = normalizeSiteName(sanitizeString(req.body.site_name || '', 50));
     if (!voucherCode) return res.status(400).json({ error: 'Voucher code required' });
     if (!confirmedSite) return res.json({ found: false, error: 'site_required' });
 
