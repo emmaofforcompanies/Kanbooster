@@ -212,6 +212,7 @@
   <div class="tabs">
     <button class="tab active" onclick="switchTab('buy')">Buy Voucher</button>
     <button class="tab" onclick="switchTab('retrieve')">Retrieve Code</button>
+    <button class="tab" onclick="switchTab('balance')">Balance Check</button>
   </div>
 
   <!-- BUY FLOW -->
@@ -417,6 +418,19 @@
       <button class="btn btn-primary" onclick="retrieveCode()">Find My Voucher →</button>
     </div>
     <div id="retrieve-result" style="display:none;"></div>
+  </div>
+
+  <div id="tab-balance" class="page">
+    <div class="card">
+      <div class="card-title">📊 Track My Balance</div>
+      <div class="alert alert-info">
+        Enter your voucher code to get your balance tracking link.
+      </div>
+      <label>Voucher Code</label>
+      <input type="text" id="balance-voucher-code" placeholder="Enter voucher code" maxlength="20" style="text-transform:uppercase; letter-spacing:1px;" autocomplete="off" autocorrect="off">
+      <button class="btn btn-primary" onclick="getBalanceLink()">Find My Link →</button>
+    </div>
+    <div id="balance-result" style="display:none;"></div>
   </div>
 
   <div class="footer">
@@ -885,10 +899,55 @@ function switchTab(tab) {
   if (tab === 'buy') {
     document.querySelectorAll('.tab')[0].classList.add('active');
     document.getElementById('tab-buy').classList.add('active');
-  } else {
+  } else if (tab === 'retrieve') {
     document.querySelectorAll('.tab')[1].classList.add('active');
     document.getElementById('tab-retrieve').classList.add('active');
     document.getElementById('retrieve-result').style.display = 'none';
+  } else if (tab === 'balance') {
+    document.querySelectorAll('.tab')[2].classList.add('active');
+    document.getElementById('tab-balance').classList.add('active');
+    document.getElementById('balance-result').style.display = 'none';
+  }
+}
+
+// ============================================
+// BALANCE CHECK
+// ============================================
+async function getBalanceLink() {
+  const code = document.getElementById('balance-voucher-code').value.trim();
+  const resultEl = document.getElementById('balance-result');
+  if (!code) return;
+
+  resultEl.style.display = 'block';
+  resultEl.innerHTML = `<div class="card"><div style="text-align:center; padding:8px 0;">Searching...</div></div>`;
+
+  try {
+    const data = await apiPost('/api/get-balance-link', { voucher_code: code });
+
+    if (!data.found) {
+      resultEl.innerHTML = `
+        <div class="card">
+          <div class="alert alert-error">
+            ❌ No balance link found yet. Connect to KanBooster WiFi with this voucher first, then try again.
+          </div>
+        </div>`;
+      return;
+    }
+
+    resultEl.innerHTML = `
+      <div class="card">
+        <div class="alert alert-info" style="margin-bottom:12px;">
+          ⚠️ This link only works while connected to KanBooster WiFi.
+        </div>
+        <a href="${data.balance_url}" class="btn btn-primary" style="display:block; text-align:center; text-decoration:none;">
+          ▶️ Track Balance
+        </a>
+      </div>`;
+  } catch(e) {
+    resultEl.innerHTML = `
+      <div class="card">
+        <div class="alert alert-error">⚠️ Something went wrong. Try again.</div>
+      </div>`;
   }
 }
 
