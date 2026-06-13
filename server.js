@@ -212,14 +212,14 @@ app.post('/api/save-balance-link', async (req, res) => {
   res.setHeader('Access-Control-Allow-Origin', '*');
   try {
     const voucherCode = sanitizeString(req.body.voucher_code || '', 30);
-    const balancePath = sanitizeString(req.body.balance_path || '', 500);
+    const balancePath = sanitizeString(req.body.balance_url || '', 500);
     const siteName = normalizeSiteName(sanitizeString(req.body.site_name || '', 50));
-    if (!voucherCode || !balancePath || !siteName) {
+    if (!voucherCode || !balancePath) {
       return res.status(400).json({ error: 'Missing fields' });
     }
     await supabase.from('voucher_balance_links').upsert({
       voucher_code: voucherCode,
-      balance_path: balancePath,
+      balance_url: balancePath,
       site_name: siteName,
       updated_at: new Date().toISOString(),
     }, { onConflict: 'voucher_code' });
@@ -238,7 +238,7 @@ app.post('/api/get-balance-link', async (req, res) => {
     if (!confirmedSite) return res.json({ found: false, error: 'site_required' });
 
     const { data: link } = await supabase.from('voucher_balance_links')
-      .select('balance_path, updated_at')
+      .select('balance_url, updated_at')
       .eq('voucher_code', voucherCode)
       .single();
 
@@ -251,10 +251,10 @@ app.post('/api/get-balance-link', async (req, res) => {
 
     if (!config) return res.json({ found: false, error: 'site_config_missing' });
 
-    if (!link.balance_path) {
-      return res.json({ found: false, error: 'no_balance_path' });
+    if (!link.balance_url) {
+      return res.json({ found: false, error: 'no_balance_url' });
     }
-    const fullUrl = config.balance_url.replace(/\/$/, '') + link.balance_path;
+    const fullUrl = config.balance_url.replace(/\/$/, '') + link.balance_url;
     res.json({ found: true, balance_url: fullUrl, updated_at: link.updated_at });
   } catch(e) {
     res.json({ found: false });
