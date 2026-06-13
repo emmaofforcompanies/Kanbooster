@@ -226,10 +226,12 @@ app.post('/api/save-balance-link', async (req, res) => {
 app.post('/api/get-balance-link', async (req, res) => {
   try {
     const voucherCode = sanitizeString(req.body.voucher_code || '', 30);
+    const confirmedSite = sanitizeString(req.body.site_name || '', 50);
     if (!voucherCode) return res.status(400).json({ error: 'Voucher code required' });
+    if (!confirmedSite) return res.json({ found: false, error: 'site_required' });
 
     const { data: link } = await supabase.from('voucher_balance_links')
-      .select('balance_path, site_name, updated_at')
+      .select('balance_path, updated_at')
       .eq('voucher_code', voucherCode)
       .single();
 
@@ -237,10 +239,10 @@ app.post('/api/get-balance-link', async (req, res) => {
 
     const { data: config } = await supabase.from('site_balance_config')
       .select('balance_url')
-      .eq('site_name', link.site_name)
+      .eq('site_name', confirmedSite)
       .single();
 
-    if (!config) return res.json({ found: false });
+    if (!config) return res.json({ found: false, error: 'site_config_missing' });
 
     const fullUrl = config.balance_url.replace(/\/$/, '') + link.balance_path;
     res.json({ found: true, balance_url: fullUrl, updated_at: link.updated_at });
