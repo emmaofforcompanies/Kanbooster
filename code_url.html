@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Track Balance — KanBooster</title>
+<style>
+  :root {
+    --bg: #0a0e17; --surface: #131a29; --border: #1e2d47;
+    --text: #e8edf7; --text2: #7a8fab; --accent: #00d4ff;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: 'Segoe UI', sans-serif; background: var(--bg); color: var(--text);
+    min-height: 100vh; display: flex; align-items: center; justify-content: center; padding: 16px;
+  }
+  .card {
+    background: var(--surface); border: 1px solid var(--border); border-radius: 16px;
+    padding: 24px; max-width: 420px; width: 100%;
+  }
+  h1 { font-size: 1.1rem; margin-bottom: 6px; color: var(--accent); }
+  p { font-size: 0.85rem; color: var(--text2); margin-bottom: 16px; }
+  input {
+    width: 100%; padding: 12px; border-radius: 10px; border: 1px solid var(--border);
+    background: #0f1520; color: var(--text); font-size: 1rem; margin-bottom: 12px;
+    text-transform: uppercase; letter-spacing: 1px;
+  }
+  button {
+    width: 100%; padding: 12px; border: none; border-radius: 10px;
+    background: var(--accent); color: #000; font-weight: 700; font-size: 0.95rem; cursor: pointer;
+    margin-top: 8px;
+  }
+  .result { margin-top: 16px; display: none; }
+  .result.show { display: block; }
+  .error { color: #ff6b6b; margin-top: 12px; font-size: 0.85rem; display: none; }
+  .error.show { display: block; }
+  .note { font-size: 0.78rem; color: var(--text2); margin-top: 10px; line-height: 1.5; }
+</style>
+</head>
+<body>
+  <div class="card">
+    <h1>📊 Track My Balance</h1>
+    <p>Enter your voucher code to get your balance tracking link.</p>
+    <input id="code" placeholder="Enter voucher code" maxlength="20">
+    <button onclick="getLink()">Find My Link</button>
+    <div id="result" class="result">
+      <div class="note">⚠️ This link only works while connected to KanBooster WiFi.</div>
+      <button id="track-btn">▶️ Track Balance</button>
+    </div>
+    <div id="error" class="error"></div>
+  </div>
+
+<script>
+async function getLink() {
+  const code = document.getElementById('code').value.trim();
+  const resultEl = document.getElementById('result');
+  const errorEl = document.getElementById('error');
+  resultEl.classList.remove('show');
+  errorEl.classList.remove('show');
+  if (!code) return;
+
+  try {
+    const res = await fetch('/api/get-balance-link', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ voucher_code: code }),
+    });
+    const data = await res.json();
+
+    if (!data.found) {
+      errorEl.textContent = '❌ No balance link found yet. Connect to KanBooster WiFi with this voucher first.';
+      errorEl.classList.add('show');
+      return;
+    }
+
+    document.getElementById('track-btn').onclick = () => {
+      window.location.href = data.balance_url;
+    };
+    resultEl.classList.add('show');
+  } catch(e) {
+    errorEl.textContent = '⚠️ Something went wrong. Try again.';
+    errorEl.classList.add('show');
+  }
+}
+
+document.getElementById('code').addEventListener('keypress', e => {
+  if (e.key === 'Enter') getLink();
+});
+</script>
+</body>
+</html>
