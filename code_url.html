@@ -41,6 +41,9 @@
   <div class="card">
     <h1>📊 Track My Balance</h1>
     <p>Enter your voucher code to get your balance tracking link.</p>
+    <select id="site" style="width:100%; padding:12px; border-radius:10px; border:1px solid var(--border); background:#0f1520; color:var(--text); font-size:1rem; margin-bottom:12px;">
+      <option value="">Select your site...</option>
+    </select>
     <input id="code" placeholder="Enter voucher code" maxlength="20">
     <button onclick="getLink()">Find My Link</button>
     <div id="result" class="result">
@@ -51,6 +54,21 @@
   </div>
 
 <script>
+// Load site list on page load
+(async function() {
+  try {
+    const res = await fetch('/api/sites');
+    const data = await res.json();
+    const select = document.getElementById('site');
+    (data.sites || []).forEach(site => {
+      const opt = document.createElement('option');
+      opt.value = site;
+      opt.textContent = site;
+      select.appendChild(opt);
+    });
+  } catch(e) {}
+})();
+
 async function getLink() {
   const code = document.getElementById('code').value.trim();
   const resultEl = document.getElementById('result');
