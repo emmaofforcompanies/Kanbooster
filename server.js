@@ -251,6 +251,9 @@ app.post('/api/get-balance-link', async (req, res) => {
 
     if (!config) return res.json({ found: false, error: 'site_config_missing' });
 
+    if (!link.balance_path) {
+      return res.json({ found: false, error: 'no_balance_path' });
+    }
     const fullUrl = config.balance_url.replace(/\/$/, '') + link.balance_path;
     res.json({ found: true, balance_url: fullUrl, updated_at: link.updated_at });
   } catch(e) {
