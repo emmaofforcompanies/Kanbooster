@@ -422,17 +422,18 @@
 
   <div id="tab-balance" class="page">
     <div class="card">
-      <div class="card-title">📊 Track My Balance</div>
+      <div class="card-title">📊 Check Balance</div>
       <div class="alert alert-info">
-        Enter the site name you connected to and your voucher code to get your balance tracking link.
+        Make sure you're connected to KanBooster WiFi, then enter your site name and voucher code.
       </div>
       <label>Site Name</label>
       <input type="text" id="balance-site-name" placeholder="Enter the site name you connected to" maxlength="50" autocomplete="off" autocorrect="off">
       <label>Voucher Code</label>
       <input type="text" id="balance-voucher-code" placeholder="Enter voucher code" maxlength="20" style="text-transform:uppercase; letter-spacing:1px;" autocomplete="off" autocorrect="off">
-      <button class="btn btn-primary" onclick="getBalanceLink()">Find My Link →</button>
+      <button class="btn btn-primary" onclick="checkBalance()">Check Balance →</button>
     </div>
     <div id="balance-result" style="display:none;"></div>
+  </div>alance-result" style="display:none;"></div>
   </div>
 
   <div class="footer">
@@ -915,23 +916,22 @@ function switchTab(tab) {
 // ============================================
 // BALANCE CHECK
 // ============================================
-async function getBalanceLink() {
+async function checkBalance() {
   const code = document.getElementById('balance-voucher-code').value.trim();
   const site = document.getElementById('balance-site-name').value.trim();
   const resultEl = document.getElementById('balance-result');
-  if (!code) return;
 
-  if (!site) {
+  if (!code || !site) {
     resultEl.style.display = 'block';
     resultEl.innerHTML = `
       <div class="card">
-        <div class="alert alert-error">❌ Please enter the site name you connected to.</div>
+        <div class="alert alert-error">❌ Please enter both site name and voucher code.</div>
       </div>`;
     return;
   }
 
   resultEl.style.display = 'block';
-  resultEl.innerHTML = `<div class="card"><div style="text-align:center; padding:8px 0;">Searching...</div></div>`;
+  resultEl.innerHTML = `<div class="card"><div style="text-align:center; padding:8px 0;">Checking...</div></div>`;
 
   try {
     const data = await apiPost('/api/get-balance-link', { voucher_code: code, site_name: site });
@@ -942,12 +942,20 @@ async function getBalanceLink() {
         : '❌ No balance link found yet. Connect to KanBooster WiFi with this voucher first, then try again.';
       resultEl.innerHTML = `
         <div class="card">
-          <div class="alert alert-error">
-            ${msg}
-          </div>
+          <div class="alert alert-error">${msg}</div>
         </div>`;
       return;
     }
+
+    resultEl.innerHTML = `<div class="card"><div style="text-align:center; padding:8px 0;">Redirecting...</div></div>`;
+    window.location.href = data.balance_url;
+  } catch(e) {
+    resultEl.innerHTML = `
+      <div class="card">
+        <div class="alert alert-error">⚠️ Something went wrong. Try again.</div>
+      </div>`;
+  }
+}
 
     resultEl.innerHTML = `
       <div class="card">
