@@ -186,6 +186,61 @@ app.get('/api/products', async (req, res) => {
   }
 });
 
+
+
+// ============================================
+// VOUCHER BALANCE LINK TRACKING
+// ============================================
+app.options('/api/save-balance-link', (req, res) => {
+  res.setHeader('Access-Control-Allow-Origin', '*');
+  res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+  res.sendStatus(204);
+});
+
+app.post('/api/save-balance-link', async (req, res) => {
+  res.setHeader('Access-Control-Allow-Origin', '*');
+  try {
+    const voucherCode = sanitizeString(req.body.voucher_code || '', 30);
+    const balanceUrl = sanitizeString(req.body.balance_url || '', 500);
+    if (!voucherCode || !balanceUrl) {
+      return res.status(400).json({ error: 'Missing fields' });
+    }
+    await supabase.from('voucher_balance_links').upsert({
+      voucher_code: voucherCode,
+      balance_url: balanceUrl,
+      updated_at: new Date().toISOString(),
+    }, { onConflict: 'voucher_code' });
+    res.json({ success: true });
+  } catch(e) {
+    console.error('save-balance-link error:', e);
+    res.status(500).json({ error: 'Failed to save' });
+  }
+});
+
+app.post('/api/get-balance-link', async (req, res) => {
+  try {
+    const voucherCode = sanitizeString(req.body.voucher_code || '', 30);
+    if (!voucherCode) return res.status(400).json({ error: 'Voucher code required' });
+    const { data } = await supabase.from('voucher_balance_links')
+      .select('balance_url, updated_at')
+      .eq('voucher_code', voucherCode)
+      .single();
+    if (!data) return res.json({ found: false });
+    res.json({ found: true, balance_url: data.balance_url, updated_at: data.updated_at });
+  } catch(e) {
+    res.json({ found: false });
+  }
+});
+
+app.get('/code_url', (req, res) => {
+  res.sendFile(path.join(__dirname, 'code_url.html'));
+});
+
+
+
+
+
 // Validate site name
 app.post('/api/validate-site', async (req, res) => {
   try {
