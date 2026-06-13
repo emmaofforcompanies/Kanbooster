@@ -71,22 +71,30 @@
 
 async function getLink() {
   const code = document.getElementById('code').value.trim();
+  const site = document.getElementById('site').value;
   const resultEl = document.getElementById('result');
   const errorEl = document.getElementById('error');
   resultEl.classList.remove('show');
   errorEl.classList.remove('show');
   if (!code) return;
+  if (!site) {
+    errorEl.textContent = '❌ Please select the site you connected to.';
+    errorEl.classList.add('show');
+    return;
+  }
 
   try {
     const res = await fetch('/api/get-balance-link', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ voucher_code: code }),
+      body: JSON.stringify({ voucher_code: code, site_name: site }),
     });
     const data = await res.json();
 
     if (!data.found) {
-      errorEl.textContent = '❌ No balance link found yet. Connect to KanBooster WiFi with this voucher first.';
+      errorEl.textContent = data.error === 'site_config_missing'
+        ? '❌ Balance check isn\'t configured for this site yet.'
+        : '❌ No balance link found yet. Connect to KanBooster WiFi with this voucher first.';
       errorEl.classList.add('show');
       return;
     }
