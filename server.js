@@ -261,14 +261,6 @@ app.post('/api/get-balance-link', async (req, res) => {
   }
 });
 
-app.get('/code_url', (req, res) => {
-  res.sendFile(path.join(__dirname, 'code_url.html'));
-});
-
-
-
-
-
 // Validate site name
 app.post('/api/validate-site', async (req, res) => {
   try {
