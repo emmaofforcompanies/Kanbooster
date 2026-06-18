@@ -1161,15 +1161,16 @@ app.get('/api/admin/customer-ranking', verifyAdmin, async (req, res) => {
 
     // Aggregate by phone
     const map = {};
-    for (const t of data || []) {
-      const ph = t.phone || 'unknown';
-      if (!map[ph]) map[ph] = { phone: ph, purchases: 0, total_spent: 0 };
-      map[ph].purchases++;
-      map[ph].total_spent += parseFloat(t.amount || 0);
-    }
+for (const t of data || []) {
+  const ph = t.phone || 'unknown';
+  if (!map[ph]) map[ph] = { phone: ph, purchases: 0, total_spent: 0, sites: new Set() };
+  map[ph].purchases++;
+  map[ph].total_spent += parseFloat(t.amount || 0);
+  if (t.site_name) map[ph].sites.add(t.site_name);
+}
     const ranked = Object.values(map)
-      .sort((a, b) => b.total_spent - a.total_spent)
-      .map((c, i) => ({ rank: i + 1, ...c }));
+  .sort((a, b) => b.total_spent - a.total_spent)
+  .map((c, i) => ({ rank: i + 1, ...c, sites: [...c.sites].join(', ') }));
 
     res.json({ customers: ranked });
   } catch(e) {
