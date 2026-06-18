@@ -1144,6 +1144,79 @@ app.get('/api/admin/pending', verifyAdmin, async (req, res) => {
 });
 
 
+// Admin: customer ranking
+app.get('/api/admin/customer-ranking', verifyAdmin, async (req, res) => {
+  try {
+    const { from, to, site } = req.query;
+    let query = supabase
+      .from('web_transactions')
+      .select('phone, amount, site_name, timestamp')
+      .eq('status', 'completed');
+    if (from) query = query.gte('timestamp', from + 'T00:00:00');
+    if (to)   query = query.lte('timestamp', to + 'T23:59:59');
+    if (site) query = query.ilike('site_name', site);
+
+    const { data, error } = await query;
+    if (error) throw error;
+
+    // Aggregate by phone
+    const map = {};
+    for (const t of data || []) {
+      const ph = t.phone || 'unknown';
+      if (!map[ph]) map[ph] = { phone: ph, purchases: 0, total_spent: 0 };
+      map[ph].purchases++;
+      map[ph].total_spent += parseFloat(t.amount || 0);
+    }
+    const ranked = Object.values(map)
+      .sort((a, b) => b.total_spent - a.total_spent)
+      .map((c, i) => ({ rank: i + 1, ...c }));
+
+    res.json({ customers: ranked });
+  } catch(e) {
+    res.status(500).json({ error: e.message });
+  }
+});
+
+// Admin: new customers (first-time buyers in date range)
+app.get('/api/admin/new-customers', verifyAdmin, async (req, res) => {
+  try {
+    const { from, to, site } = req.query;
+
+    // Get all completed transactions ever (to find each phone's first purchase)
+    let allQuery = supabase
+      .from('web_transactions')
+      .select('phone, site_name, timestamp, amount, product_id')
+      .eq('status', 'completed')
+      .order('timestamp', { ascending: true });
+
+    const { data: allData, error } = await allQuery;
+    if (error) throw error;
+
+    // Find first purchase date per phone
+    const firstPurchase = {};
+    for (const t of allData || []) {
+      if (!firstPurchase[t.phone]) firstPurchase[t.phone] = t;
+    }
+
+    // Filter: first purchase fell within date range (and site if given)
+    const fromDt = from ? new Date(from + 'T00:00:00') : null;
+    const toDt   = to   ? new Date(to   + 'T23:59:59') : null;
+
+    const newCustomers = Object.values(firstPurchase).filter(t => {
+      const d = new Date(t.timestamp);
+      if (fromDt && d < fromDt) return false;
+      if (toDt   && d > toDt)   return false;
+      if (site && !t.site_name?.toLowerCase().includes(site.toLowerCase())) return false;
+      return true;
+    });
+
+    res.json({ customers: newCustomers });
+  } catch(e) {
+    res.status(500).json({ error: e.message });
+  }
+});
+
+
 // Admin: manual deliver
 app.post('/api/admin/deliver', verifyAdmin, async (req, res) => {
   try {
