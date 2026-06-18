@@ -151,7 +151,8 @@
       <div class="nav-item active" onclick="showSection('dashboard')"><span class="nav-icon">📊</span> Dashboard</div>
       <div class="nav-section">Transactions</div>
       <div class="nav-item" onclick="showSection('transactions')"><span class="nav-icon">💳</span> All Transactions</div>
-      <div class="nav-item" onclick="showSection('pending')"><span class="nav-icon">⏳</span> Pending / Issues</div>
+      <div class="nav-item" onclick="showSection('new-customers'); loadNewCustomers()"><span class="nav-icon">🆕</span> New Customers</div>
+<div class="nav-item" onclick="showSection('customer-ranking'); loadCustomerRanking()"><span class="nav-icon">🏆</span> Customer Ranking</div>
       <div class="nav-section">Stock</div>
       <div class="nav-item" onclick="showSection('stock')"><span class="nav-icon">📦</span> Check Stock</div>
       <div class="nav-item" onclick="showSection('upload')"><span class="nav-icon">⬆️</span> Upload Codes</div>
@@ -239,6 +240,53 @@
         </div>
       </div>
 
+
+<!-- NEW CUSTOMERS -->
+      <div class="section" id="section-new-customers">
+        <div class="section-title">New Customers</div>
+        <div class="filters">
+          <input type="date" class="filter-input" id="nc-from">
+          <input type="date" class="filter-input" id="nc-to">
+          <select class="filter-input" id="nc-site" style="min-width:160px;">
+            <option value="">All Sites</option>
+          </select>
+          <button class="btn btn-primary" onclick="loadNewCustomers()">🔍 Load</button>
+        </div>
+        <div class="card">
+          <div class="card-title">🆕 First-Time Buyers in Period</div>
+          <div class="table-wrap">
+            <table>
+              <thead><tr><th>#</th><th>Phone</th><th>Site</th><th>First Purchase Date</th><th>Amount</th></tr></thead>
+              <tbody id="nc-body"><tr><td colspan="5" style="color:var(--text2); text-align:center;">Set date range and click Load</td></tr></tbody>
+            </table>
+          </div>
+          <div id="nc-count" style="font-size:0.8rem; color:var(--text2); margin-top:10px;"></div>
+        </div>
+      </div>
+
+      <!-- CUSTOMER RANKING -->
+      <div class="section" id="section-customer-ranking">
+        <div class="section-title">Customer Ranking</div>
+        <div class="filters">
+          <input type="date" class="filter-input" id="cr-from">
+          <input type="date" class="filter-input" id="cr-to">
+          <select class="filter-input" id="cr-site" style="min-width:160px;">
+            <option value="">All Sites</option>
+          </select>
+          <button class="btn btn-primary" onclick="loadCustomerRanking()">🔍 Load</button>
+        </div>
+        <div class="card">
+          <div class="card-title">🏆 Top Customers by Spending</div>
+          <div class="table-wrap">
+            <table>
+              <thead><tr><th>Rank</th><th>Phone</th><th>Purchases</th><th>Total Spent</th></tr></thead>
+              <tbody id="cr-body"><tr><td colspan="4" style="color:var(--text2); text-align:center;">Set date range and click Load</td></tr></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      
       <!-- STOCK -->
       <div class="section" id="section-stock">
         <div class="section-title">Stock Levels</div>
@@ -863,17 +911,29 @@ async function confirmUpload() {
 async function loadSiteList() {
   try {
     const { sites } = await apiGet('/api/sites');
-    // Populate site-filter dropdown
+
+    // Populate site-filter dropdown (Products page)
     const sf = document.getElementById('site-filter');
     const prev = sf.value;
     sf.innerHTML = '<option value="">-- Choose a site --</option>' +
       sites.map(s => `<option value="${s}">${s}</option>`).join('');
     if (prev) sf.value = prev;
 
-    // Populate manual-site dropdown
+    // Populate manual-site dropdown (Manual Deliver page)
     const ms = document.getElementById('manual-site');
     ms.innerHTML = '<option value="">Select site...</option>' +
       sites.map(s => `<option value="${s}">${s}</option>`).join('');
+
+    // Populate site filter on New Customers page
+    const nc = document.getElementById('nc-site');
+    if (nc) nc.innerHTML = '<option value="">All Sites</option>' +
+      sites.map(s => `<option value="${s}">${s}</option>`).join('');
+
+    // Populate site filter on Customer Ranking page
+    const cr = document.getElementById('cr-site');
+    if (cr) cr.innerHTML = '<option value="">All Sites</option>' +
+      sites.map(s => `<option value="${s}">${s}</option>`).join('');
+
   } catch(e) { showToast('❌ Could not load sites', 'error'); }
 }
 
@@ -1130,6 +1190,81 @@ async function forceDeliver(paymentCode, productId, siteName) {
   btn.textContent = '🎟 Get & Deliver Code';
 }
 
+
+// ============================================
+// NEW CUSTOMERS
+// ============================================
+async function loadNewCustomers() {
+  const from = document.getElementById('nc-from').value;
+  const to   = document.getElementById('nc-to').value;
+  const site = document.getElementById('nc-site').value;
+  const tbody = document.getElementById('nc-body');
+  tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;"><span class="spinner"></span></td></tr>';
+
+  try {
+    let url = '/api/admin/new-customers?';
+    if (from) url += `from=${from}&`;
+    if (to)   url += `to=${to}&`;
+    if (site) url += `site=${encodeURIComponent(site)}`;
+
+    const { customers } = await apiGet(url);
+    document.getElementById('nc-count').textContent = `${customers.length} new customer(s) found`;
+    if (!customers || customers.length === 0) {
+      tbody.innerHTML = '<tr><td colspan="5" style="color:var(--text2); text-align:center;">No new customers in this period</td></tr>';
+      return;
+    }
+    tbody.innerHTML = customers.map((c, i) => {
+      const date = c.timestamp ? c.timestamp.substring(0,16).replace('T',' ') : 'N/A';
+      return `<tr>
+        <td style="color:var(--text2);">${i + 1}</td>
+        <td style="font-family:'JetBrains Mono',monospace;">${c.phone}</td>
+        <td>${c.site_name || '—'}</td>
+        <td style="font-size:0.8rem; color:var(--text2);">${date}</td>
+        <td style="color:var(--accent);">₦${parseFloat(c.amount||0).toLocaleString()}</td>
+      </tr>`;
+    }).join('');
+  } catch(e) {
+    tbody.innerHTML = `<tr><td colspan="5" style="color:var(--danger);">Error: ${e.message}</td></tr>`;
+  }
+}
+
+// ============================================
+// CUSTOMER RANKING
+// ============================================
+async function loadCustomerRanking() {
+  const from = document.getElementById('cr-from').value;
+  const to   = document.getElementById('cr-to').value;
+  const site = document.getElementById('cr-site').value;
+  const tbody = document.getElementById('cr-body');
+  tbody.innerHTML = '<tr><td colspan="4" style="text-align:center;"><span class="spinner"></span></td></tr>';
+
+  try {
+    let url = '/api/admin/customer-ranking?';
+    if (from) url += `from=${from}&`;
+    if (to)   url += `to=${to}&`;
+    if (site) url += `site=${encodeURIComponent(site)}`;
+
+    const { customers } = await apiGet(url);
+    if (!customers || customers.length === 0) {
+      tbody.innerHTML = '<tr><td colspan="4" style="color:var(--text2); text-align:center;">No data in this period</td></tr>';
+      return;
+    }
+    tbody.innerHTML = customers.map(c => {
+      const medal = c.rank === 1 ? '🥇' : c.rank === 2 ? '🥈' : c.rank === 3 ? '🥉' : `#${c.rank}`;
+      return `<tr>
+        <td style="font-family:'JetBrains Mono',monospace; font-size:1rem;">${medal}</td>
+        <td style="font-family:'JetBrains Mono',monospace;">${c.phone}</td>
+        <td style="color:var(--blue);">${c.purchases}</td>
+        <td style="color:var(--success); font-weight:600;">₦${c.total_spent.toLocaleString()}</td>
+      </tr>`;
+    }).join('');
+  } catch(e) {
+    tbody.innerHTML = `<tr><td colspan="4" style="color:var(--danger);">Error: ${e.message}</td></tr>`;
+  }
+}
+
+
+  
 // ============================================
 // TOAST
 // ============================================
