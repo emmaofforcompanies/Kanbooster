@@ -1252,14 +1252,15 @@ async function loadCustomerRanking() {
     tbody.innerHTML = customers.map(c => {
       const medal = c.rank === 1 ? '🥇' : c.rank === 2 ? '🥈' : c.rank === 3 ? '🥉' : `#${c.rank}`;
       return `<tr>
-        <td style="font-family:'JetBrains Mono',monospace; font-size:1rem;">${medal}</td>
-        <td style="font-family:'JetBrains Mono',monospace;">${c.phone}</td>
-        <td style="color:var(--blue);">${c.purchases}</td>
-        <td style="color:var(--success); font-weight:600;">₦${c.total_spent.toLocaleString()}</td>
-      </tr>`;
+  <td style="font-family:'JetBrains Mono',monospace; font-size:1rem;">${medal}</td>
+  <td style="font-family:'JetBrains Mono',monospace;">${c.phone}</td>
+  <td style="font-size:0.78rem; color:var(--text2);">${c.sites || '—'}</td>
+  <td style="color:var(--blue);">${c.purchases}</td>
+  <td style="color:var(--success); font-weight:600;">₦${c.total_spent.toLocaleString()}</td>
+</tr>`;
     }).join('');
   } catch(e) {
-    tbody.innerHTML = `<tr><td colspan="4" style="color:var(--danger);">Error: ${e.message}</td></tr>`;
+    tbody.innerHTML = `<tr><td colspan="5" style="color:var(--danger);">Error: ${e.message}</td></tr>`;
   }
 }
 
