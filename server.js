@@ -1211,7 +1211,8 @@ app.get('/api/admin/new-customers', verifyAdmin, async (req, res) => {
       return true;
     });
 
-    res.json({ customers: newCustomers });
+    newCustomers.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
+res.json({ customers: newCustomers });
   } catch(e) {
     res.status(500).json({ error: e.message });
   }
