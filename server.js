@@ -550,6 +550,74 @@ res.json({
 });
 
 
+// ============================================
+// FLUTTERWAVE WEBHOOK
+// ============================================
+app.post('/api/flw-webhook', async (req, res) => {
+  try {
+    // Verify the request actually came from Flutterwave
+    const signature = req.headers['verif-hash'];
+    if (!signature || signature !== process.env.FLW_SECRET_HASH) {
+      console.warn('Webhook: invalid signature');
+      return res.status(401).end();
+    }
+
+    const payload = req.body;
+    const txRef = payload?.data?.tx_ref;
+    const flwStatus = payload?.data?.status;
+    const paidAmount = parseFloat(payload?.data?.amount);
+    const flwRef = String(payload?.data?.id || '');
+
+    // Acknowledge immediately — Flutterwave just wants a fast 200
+    res.status(200).json({ received: true });
+
+    if (!txRef || flwStatus !== 'successful') return;
+
+    const identifierCode = txRef;
+
+    const { data: txn } = await supabase
+      .from('web_transactions').select('*').eq('payment_code', identifierCode).single();
+    if (!txn) return;
+
+    // Already completed — nothing to do
+    if (txn.status === 'completed' && txn.voucher_code) return;
+
+    const expectedAmount = parseFloat(txn.amount);
+
+    if (paidAmount < expectedAmount) {
+      await supabase.from('web_transactions').update({ status: 'underpaid', flw_ref: flwRef })
+        .eq('payment_code', identifierCode);
+      return;
+    }
+    if (paidAmount > expectedAmount) {
+      await supabase.from('web_transactions').update({ status: 'overpaid', flw_ref: flwRef })
+        .eq('payment_code', identifierCode);
+      return;
+    }
+
+    // Exact match — deliver voucher
+    const voucher = await assignVoucher(txn.product_id, txn.site_name);
+    if (!voucher) {
+      await supabase.from('web_transactions').update({ status: 'out_of_stock', flw_ref: flwRef })
+        .eq('payment_code', identifierCode);
+      return;
+    }
+
+    await supabase.from('web_transactions').update({
+      status: 'completed',
+      voucher_code: voucher,
+      sent: 'delivered',
+      flw_ref: flwRef,
+      delivered_at: new Date().toISOString(),
+    }).eq('payment_code', identifierCode);
+
+  } catch(e) {
+    console.error('webhook error:', e);
+    // Already responded 200 above, so just log
+  }
+});
+
+
 // Confirm payment and deliver voucher (called after FLW callback)
 app.post('/api/confirm-payment', purchaseLimiter, async (req, res) => {
   try {
