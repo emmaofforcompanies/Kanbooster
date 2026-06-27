@@ -767,20 +767,24 @@ async function loadTransactions(page = 1) {
   const from = document.getElementById('txn-from').value;
   const to = document.getElementById('txn-to').value;
   const status = document.getElementById('txn-status').value;
+  const site = document.getElementById('txn-site').value;
+  const lodge = document.getElementById('txn-lodge').value.trim();
   const search = document.getElementById('txn-search').value.trim();
   const tbody = document.getElementById('txn-body');
-  tbody.innerHTML = '<tr><td colspan="7" style="color:var(--text2); text-align:center;"><span class="spinner"></span></td></tr>';
+  tbody.innerHTML = '<tr><td colspan="8" style="color:var(--text2); text-align:center;"><span class="spinner"></span></td></tr>';
 
   try {
     let url = `/api/admin/transactions?page=${page}`;
     if (from) url += `&from=${from}`;
     if (to) url += `&to=${to}`;
     if (status) url += `&status=${encodeURIComponent(status)}`;
+    if (site) url += `&site=${encodeURIComponent(site)}`;
+    if (lodge) url += `&lodge=${encodeURIComponent(lodge)}`;
     if (search) url += `&search=${encodeURIComponent(search)}`;
 
     const { data, count } = await apiGet(url);
     if (!data || data.length === 0) {
-      tbody.innerHTML = '<tr><td colspan="7" style="color:var(--text2); text-align:center;">No transactions found</td></tr>';
+      tbody.innerHTML = '<tr><td colspan="8" style="color:var(--text2); text-align:center;">No transactions found</td></tr>';
       document.getElementById('txn-pagination').innerHTML = '';
       return;
     }
@@ -798,6 +802,7 @@ async function loadTransactions(page = 1) {
         <td>${t.phone || 'N/A'}</td>
         <td style="color:var(--accent);">₦${parseFloat(t.amount||0).toLocaleString()}</td>
         <td style="font-size:0.78rem;">${t.site_name || 'N/A'}</td>
+        <td style="font-size:0.78rem;">${t.lodge_name || '—'}</td>
         <td>${statusToBadge(t.status)}</td>
         <td>${voucher}</td>
         <td>${source}</td>
@@ -807,7 +812,7 @@ async function loadTransactions(page = 1) {
     const totalPages = Math.ceil((count||0) / PAGE_SIZE);
     renderPagination('txn-pagination', page, totalPages, 'loadTransactions');
   } catch(e) {
-    tbody.innerHTML = `<tr><td colspan="7" style="color:var(--danger);">Error: ${e.message}</td></tr>`;
+    tbody.innerHTML = `<tr><td colspan="8" style="color:var(--danger);">Error: ${e.message}</td></tr>`;
   }
 }
 
@@ -1026,6 +1031,11 @@ async function loadSiteList() {
     // Populate site filter on Customer Ranking page
     const cr = document.getElementById('cr-site');
     if (cr) cr.innerHTML = '<option value="">All Sites</option>' +
+      sites.map(s => `<option value="${s}">${s}</option>`).join('');
+
+    // Populate site filter on Transactions page
+    const txnSite = document.getElementById('txn-site');
+    if (txnSite) txnSite.innerHTML = '<option value="">All Sites</option>' +
       sites.map(s => `<option value="${s}">${s}</option>`).join('');
 
   } catch(e) { showToast('❌ Could not load sites', 'error'); }
