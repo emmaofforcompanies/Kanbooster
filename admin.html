@@ -240,7 +240,97 @@
         </div>
       </div>
 
+<div class="nav-item" onclick="showSection('customer-register'); loadCustomerRegister()"><span class="nav-icon">📋</span> Customer Register</div>
 
+<div class="section" id="section-customer-register">
+  <div class="section-title">Customer Register</div>
+
+  <div class="card">
+    <div class="card-title">📥 CSV Template</div>
+    <p style="font-size:0.85rem;color:var(--text2);">Required columns: <code>phone, site_name, lodge_name</code></p>
+    <button class="btn btn-secondary" onclick="downloadRegisterTemplate()">⬇ Download Template</button>
+  </div>
+
+  <div class="card">
+    <div class="card-title">⬆️ Upload / Update Register</div>
+    <div class="upload-area" id="register-upload-area" onclick="document.getElementById('register-csv-file').click()"
+         ondragover="event.preventDefault(); this.classList.add('dragover')"
+         ondragleave="this.classList.remove('dragover')"
+         ondrop="handleRegisterDrop(event)">
+      <div style="font-size:2rem;">📁</div>
+      <div style="font-size:0.9rem;color:var(--text2);">Click or drag & drop CSV (existing phones get updated)</div>
+    </div>
+    <input type="file" id="register-csv-file" accept=".csv" style="display:none" onchange="handleRegisterFileSelect(event)">
+    <div id="register-upload-preview" style="display:none;">
+      <div id="register-upload-summary" style="font-size:0.85rem;margin-bottom:12px;"></div>
+      <button class="btn btn-primary" id="btn-confirm-register-upload" onclick="confirmRegisterUpload()" style="display:none;">✅ Confirm Upload</button>
+    </div>
+    <div id="register-upload-result" style="display:none;"></div>
+  </div>
+
+  <div class="card">
+    <div class="card-title">📋 Registered Customers</div>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>Phone</th><th>Site</th><th>Lodge Name</th><th>Source</th><th>Updated</th></tr></thead>
+        <tbody id="register-body"><tr><td colspan="5" style="text-align:center;color:var(--text2);">Loading...</td></tr></tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+function downloadRegisterTemplate() {
+  const csv = 'phone,site_name,lodge_name\n08012345678,site1,Sunset Lodge\n';
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(new Blob([csv], { type: 'text/csv' }));
+  a.download = 'customer_register_template.csv';
+  a.click();
+}
+
+let registerRows = [];
+
+function handleRegisterDrop(e) {
+  e.preventDefault();
+  document.getElementById('register-upload-area').classList.remove('dragover');
+  if (e.dataTransfer.files[0]) processRegisterCSV(e.dataTransfer.files[0]);
+}
+function handleRegisterFileSelect(e) {
+  if (e.target.files[0]) processRegisterCSV(e.target.files[0]);
+}
+
+async function processRegisterCSV(file) {
+  const text = await file.text();
+  const lines = text.split('\n').map(l => l.trim()).filter(l => l);
+  const headers = lines[0].split(',').map(h => h.trim().toLowerCase());
+  registerRows = [];
+  for (let i = 1; i < lines.length; i++) {
+    const cols = lines[i].split(',').map(c => c.trim());
+    const row = {};
+    headers.forEach((h, idx) => row[h] = cols[idx] || '');
+    if (!row.phone) continue;
+    registerRows.push({ phone: row.phone, site_name: row.site_name || '', lodge_name: row.lodge_name || '' });
+  }
+  document.getElementById('register-upload-preview').style.display = 'block';
+  document.getElementById('register-upload-summary').textContent = `${registerRows.length} rows ready (existing phones will be updated)`;
+  document.getElementById('btn-confirm-register-upload').style.display = 'inline-block';
+}
+
+async function confirmRegisterUpload() {
+  const result = await apiPost('/api/admin/upload-register', { rows: registerRows });
+  document.getElementById('register-upload-result').style.display = 'block';
+  document.getElementById('register-upload-result').innerHTML = `<div class="alert alert-success">✅ ${result.uploaded} rows saved</div>`;
+  registerRows = [];
+  loadCustomerRegister();
+}
+
+async function loadCustomerRegister() {
+  const { customers } = await apiGet('/api/admin/customer-register');
+  const tbody = document.getElementById('register-body');
+  if (!customers.length) { tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;">No customers</td></tr>'; return; }
+  tbody.innerHTML = customers.map(c => `<tr><td>${c.phone}</td><td>${c.site_name||''}</td><td>${c.lodge_name||''}</td><td>${c.source}</td><td>${new Date(c.updated_at||c.created_at).toLocaleString()}</td></tr>`).join('');
+}
+      
+      
 <!-- NEW CUSTOMERS -->
       <div class="section" id="section-new-customers">
         <div class="section-title">New Customers</div>
