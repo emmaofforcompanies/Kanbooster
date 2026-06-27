@@ -1339,7 +1339,16 @@ for (const t of data || []) {
   .sort((a, b) => b.total_spent - a.total_spent)
   .map((c, i) => ({ rank: i + 1, ...c, sites: [...c.sites].join(', ') }));
 
-    res.json({ customers: ranked });
+    const rankedPhones = ranked.map(c => c.phone).filter(Boolean);
+    let crLodgeMap = {};
+    if (rankedPhones.length > 0) {
+      const { data: regs } = await supabase
+        .from('customer_register').select('phone, lodge_name').in('phone', rankedPhones);
+      (regs || []).forEach(r => { crLodgeMap[r.phone] = r.lodge_name; });
+    }
+    const enrichedRanked = ranked.map(c => ({ ...c, lodge_name: crLodgeMap[c.phone] || '' }));
+
+    res.json({ customers: enrichedRanked });
   } catch(e) {
     res.status(500).json({ error: e.message });
   }
