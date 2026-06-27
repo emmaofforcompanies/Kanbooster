@@ -321,8 +321,8 @@
           <div class="card-title">🏆 Top Customers by Spending</div>
           <div class="table-wrap">
             <table>
-              <thead><tr><th>Rank</th><th>Phone</th><th>Site</th><th>Purchases</th><th>Total Spent</th></tr></thead>
-              <tbody id="cr-body"><tr><td colspan="4" style="color:var(--text2); text-align:center;">Set date range and click Load</td></tr></tbody>
+              <thead><tr><th>Rank</th><th>Phone</th><th>Site</th><th>Lodge</th><th>Purchases</th><th>Total Spent</th></tr></thead>
+<tbody id="cr-body"><tr><td colspan="6" style="color:var(--text2); text-align:center;">Set date range and click Load</td></tr></tbody>
             </table>
           </div>
         </div>
@@ -1341,7 +1341,7 @@ async function loadCustomerRanking() {
   const to   = document.getElementById('cr-to').value;
   const site = document.getElementById('cr-site').value;
   const tbody = document.getElementById('cr-body');
-  tbody.innerHTML = '<tr><td colspan="4" style="text-align:center;"><span class="spinner"></span></td></tr>';
+  tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;"><span class="spinner"></span></td></tr>';
 
   try {
     let url = '/api/admin/customer-ranking?';
@@ -1351,7 +1351,7 @@ async function loadCustomerRanking() {
 
     const { customers } = await apiGet(url);
     if (!customers || customers.length === 0) {
-      tbody.innerHTML = '<tr><td colspan="4" style="color:var(--text2); text-align:center;">No data in this period</td></tr>';
+      tbody.innerHTML = '<tr><td colspan="6" style="color:var(--text2); text-align:center;">No data in this period</td></tr>';
       return;
     }
     tbody.innerHTML = customers.map(c => {
@@ -1360,12 +1360,13 @@ async function loadCustomerRanking() {
   <td style="font-family:'JetBrains Mono',monospace; font-size:1rem;">${medal}</td>
   <td style="font-family:'JetBrains Mono',monospace;">${c.phone}</td>
   <td style="font-size:0.78rem; color:var(--text2);">${c.sites || '—'}</td>
+  <td style="font-size:0.78rem; color:var(--text2);">${c.lodge_name || '—'}</td>
   <td style="color:var(--blue);">${c.purchases}</td>
   <td style="color:var(--success); font-weight:600;">₦${c.total_spent.toLocaleString()}</td>
 </tr>`;
     }).join('');
   } catch(e) {
-    tbody.innerHTML = `<tr><td colspan="5" style="color:var(--danger);">Error: ${e.message}</td></tr>`;
+    tbody.innerHTML = `<tr><td colspan="6" style="color:var(--danger);">Error: ${e.message}</td></tr>`;
   }
 }
 
