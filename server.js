@@ -327,6 +327,45 @@ app.post('/api/check-stock', async (req, res) => {
   }
 });
 
+
+app.post('/api/check-customer', purchaseLimiter, async (req, res) => {
+  try {
+    const phone = sanitizeString(req.body.phone || '', 15);
+    const siteName = sanitizeString(req.body.site_name || '', 50).replace(/\s+/g,'').toLowerCase();
+    if (!isValidPhone(phone)) return res.status(400).json({ error: 'Invalid phone number' });
+
+    const { data: existing } = await supabase
+      .from('customer_register').select('id').eq('phone', phone).single();
+
+    if (existing) return res.json({ is_new: false });
+
+    // New customer — caller must collect lodge_name next, then call /api/register-customer
+    return res.json({ is_new: true });
+  } catch(e) {
+    res.status(500).json({ error: 'Check failed' });
+  }
+});
+
+app.post('/api/register-customer', purchaseLimiter, async (req, res) => {
+  try {
+    const phone = sanitizeString(req.body.phone || '', 15);
+    const siteName = sanitizeString(req.body.site_name || '', 50).replace(/\s+/g,'').toLowerCase();
+    const lodgeName = sanitizeString(req.body.lodge_name || '', 100);
+    if (!isValidPhone(phone)) return res.status(400).json({ error: 'Invalid phone number' });
+    if (!lodgeName) return res.status(400).json({ error: 'Lodge name required' });
+
+    await supabase.from('customer_register').upsert({
+      phone, site_name: siteName, lodge_name: lodgeName,
+      source: 'auto', updated_at: new Date().toISOString(),
+    }, { onConflict: 'phone' });
+
+    res.json({ success: true });
+  } catch(e) {
+    res.status(500).json({ error: 'Registration failed' });
+  }
+});
+
+
 // Pre-fetch: generate a bank account speculatively at site validation time.
 // The identifier is reserved here; /api/create-transaction will link phone+product later.
 app.post('/api/create-transaction-prefetch', async (req, res) => {
@@ -717,6 +756,47 @@ app.post('/api/confirm-payment', purchaseLimiter, async (req, res) => {
     res.status(500).json({ error: 'Payment confirmation failed' });
   }
 });
+
+
+
+
+
+app.get('/api/admin/customer-register', verifyAdmin, async (req, res) => {
+  try {
+    const { data, error } = await supabase
+      .from('customer_register').select('*').order('created_at', { ascending: false }).limit(500);
+    if (error) throw error;
+    res.json({ customers: data || [] });
+  } catch(e) {
+    res.status(500).json({ error: e.message });
+  }
+});
+
+app.post('/api/admin/upload-register', verifyAdmin, async (req, res) => {
+  try {
+    const rows = req.body.rows;
+    if (!Array.isArray(rows) || rows.length === 0) return res.status(400).json({ error: 'No rows provided' });
+
+    const batch = rows.map(r => ({
+      phone: sanitizeString(r.phone, 15),
+      site_name: sanitizeString(r.site_name || '', 50).replace(/\s+/g,'').toLowerCase(),
+      lodge_name: sanitizeString(r.lodge_name || '', 100),
+      source: 'admin_upload',
+      updated_at: new Date().toISOString(),
+    })).filter(r => isValidPhone(r.phone));
+
+    const { error } = await supabase.from('customer_register')
+      .upsert(batch, { onConflict: 'phone' });   // <-- updates existing row if phone exists
+    if (error) throw error;
+
+    res.json({ success: true, uploaded: batch.length });
+  } catch(e) {
+    res.status(500).json({ error: e.message });
+  }
+});
+
+
+
 
 // Check transaction status (polling)
 // Check transaction status (polling) — also auto-verifies pending payments via FLW
