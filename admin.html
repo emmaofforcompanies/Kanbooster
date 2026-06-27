@@ -206,15 +206,19 @@
             <option value="underpaid">Underpaid</option>
             <option value="overpaid">Overpaid</option>
             <option value="refund">Refund</option>
-          </select>
-          <input type="text" class="filter-input" id="txn-search" placeholder="Search phone/code...">
+          <select class="filter-input" id="txn-status">...</select>
+<select class="filter-input" id="txn-site" style="min-width:160px;">
+  <option value="">All Sites</option>
+</select>
+<input type="text" class="filter-input" id="txn-lodge" placeholder="Filter by lodge name...">
+<input type="text" class="filter-input" id="txn-search" placeholder="Search phone/code...">
           <button class="btn btn-primary" onclick="loadTransactions()">Search</button>
         </div>
         <div class="card">
           <div class="table-wrap">
             <table>
-              <thead><tr><th>Date</th><th>Phone</th><th>Amount</th><th>Site</th><th>Status</th><th>Voucher</th><th>Source</th></tr></thead>
-              <tbody id="txn-body"><tr><td colspan="7" style="color:var(--text2); text-align:center; padding:20px;">Set filters and click Search</td></tr></tbody>
+              <thead><tr><th>Date</th><th>Phone</th><th>Amount</th><th>Site</th><th>Lodge</th><th>Status</th><th>Voucher</th><th>Source</th></tr></thead>
+<tbody id="txn-body"><tr><td colspan="8" ...>Set filters and click Search</td></tr></tbody>
             </table>
           </div>
           <div class="pagination" id="txn-pagination"></div>
@@ -294,8 +298,8 @@
           <div class="card-title">🆕 First-Time Buyers in Period</div>
           <div class="table-wrap">
             <table>
-              <thead><tr><th>#</th><th>Phone</th><th>Site</th><th>First Purchase Date</th><th>Amount</th></tr></thead>
-              <tbody id="nc-body"><tr><td colspan="5" style="color:var(--text2); text-align:center;">Set date range and click Load</td></tr></tbody>
+              <thead><tr><th>#</th><th>Phone</th><th>Site</th><th>Lodge</th><th>First Purchase Date</th><th>Amount</th></tr></thead>
+<tbody id="nc-body"><tr><td colspan="6" style="color:var(--text2); text-align:center;">Set date range and click Load</td></tr></tbody>
             </table>
           </div>
           <div id="nc-count" style="font-size:0.8rem; color:var(--text2); margin-top:10px;"></div>
@@ -400,7 +404,7 @@
     </div>
     <div class="table-wrap">
       <table><thead><tr><th>ID</th><th>Name</th><th>Price</th><th>Status</th><th>Actions</th></tr></thead>
-      <tbody id="site-products-body"><tr><td colspan="5" style="color:var(--text2); text-align:center;">Select a site above</td></tr></tbody></table>
+      tbody.innerHTML = '<tr><td colspan="6" style="color:var(--text2); text-align:center;">No new customers in this period</td></tr>';
     </div>
   </div>
 </div>
@@ -1309,6 +1313,7 @@ async function loadNewCustomers() {
         <td style="color:var(--text2);">${i + 1}</td>
         <td style="font-family:'JetBrains Mono',monospace;">${c.phone}</td>
         <td>${c.site_name || '—'}</td>
+        <td>${c.lodge_name || '—'}</td>
         <td style="font-size:0.8rem; color:var(--text2);">${date}</td>
         <td style="color:var(--accent);">₦${parseFloat(c.amount||0).toLocaleString()}</td>
       </tr>`;
