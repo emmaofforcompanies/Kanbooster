@@ -1108,24 +1108,43 @@ app.post('/api/admin/logout', verifyAdmin, async (req, res) => {
 // Admin: get transactions
 app.get('/api/admin/transactions', verifyAdmin, async (req, res) => {
   try {
-    const { from, to, status, search, page = 1 } = req.query;
+    const { from, to, status, search, site, lodge, page = 1 } = req.query;
     const pageSize = 50;
+
+    let phoneFilter = null;
+    if (lodge) {
+      const { data: lodgeMatches } = await supabase
+        .from('customer_register').select('phone').ilike('lodge_name', `%${lodge}%`);
+      phoneFilter = (lodgeMatches || []).map(r => r.phone);
+      if (phoneFilter.length === 0) return res.json({ data: [], count: 0 });
+    }
 
     let query = supabase.from('web_transactions').select('*', { count: 'exact' });
     if (from) query = query.gte('timestamp', from + 'T00:00:00');
     if (to) query = query.lte('timestamp', to + 'T23:59:59');
     if (status) query = query.eq('status', status);
+    if (site) query = query.ilike('site_name', site.replace(/\s+/g, ''));
+    if (phoneFilter) query = query.in('phone', phoneFilter);
     if (search) query = query.or(`phone.ilike.%${search}%,payment_code.ilike.%${search}%`);
     query = query.order('timestamp', { ascending: false })
       .range((page - 1) * pageSize, page * pageSize - 1);
 
     const { data, count } = await query;
-    res.json({ data, count });
+
+    const phones = [...new Set((data || []).map(t => t.phone).filter(Boolean))];
+    let lodgeMap = {};
+    if (phones.length > 0) {
+      const { data: regs } = await supabase
+        .from('customer_register').select('phone, lodge_name').in('phone', phones);
+      (regs || []).forEach(r => { lodgeMap[r.phone] = r.lodge_name; });
+    }
+    const enriched = (data || []).map(t => ({ ...t, lodge_name: lodgeMap[t.phone] || '' }));
+
+    res.json({ data: enriched, count });
   } catch(e) {
     res.status(500).json({ error: e.message });
   }
 });
-
 // Admin: get dashboard stats
 app.get('/api/admin/stats', verifyAdmin, async (req, res) => {
   try {
@@ -1359,8 +1378,17 @@ app.get('/api/admin/new-customers', verifyAdmin, async (req, res) => {
       return true;
     });
 
-    newCustomers.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
-res.json({ customers: newCustomers });
+    const ncPhones = [...new Set(newCustomers.map(c => c.phone).filter(Boolean))];
+    let ncLodgeMap = {};
+    if (ncPhones.length > 0) {
+      const { data: regs } = await supabase
+        .from('customer_register').select('phone, lodge_name').in('phone', ncPhones);
+      (regs || []).forEach(r => { ncLodgeMap[r.phone] = r.lodge_name; });
+    }
+    const enrichedNew = newCustomers.map(c => ({ ...c, lodge_name: ncLodgeMap[c.phone] || '' }));
+
+    enrichedNew.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
+res.json({ customers: enrichedNew });
   } catch(e) {
     res.status(500).json({ error: e.message });
   }
