@@ -282,6 +282,23 @@
       </div>
     </div>
 
+
+
+
+
+<div id="page-2b" class="page">
+  <div class="card">
+    <div class="card-title">🏠 Lodge Name</div>
+    <label>Enter your Lodge Name</label>
+    <input type="text" id="lodge-input" placeholder="e.g. Sunset Lodge">
+    <button class="btn btn-primary" onclick="submitLodgeName()">Continue →</button>
+    <button class="btn btn-secondary" onclick="goToPage2()">← Back</button>
+  </div>
+</div>
+
+
+
+    
     <!-- Page 3: Payment / Waiting -->
     <!-- Page 3: Bank Transfer -->
     <div id="page-3" class="page">
@@ -612,62 +629,64 @@ function goToPage2() {
 async function goToPage3() {
   const phone = document.getElementById('phone-input').value.trim();
   const siteName = document.getElementById('site-select').value.replace(/\s+/g, '');
-
   if (!phone || phone.length < 10) { alert('Please enter a valid phone number.'); return; }
   if (!siteName) { alert('Please go back and select a site first.'); return; }
 
   showLoading('Checking stock...');
-
   try {
-    const { in_stock } = await apiPost('/api/check-stock', {
-      product_id: selectedProduct.id,
-      site_name: siteName,
-    });
-    if (!in_stock) {
-      hideLoading();
-      alert(`Sorry, ${selectedProduct.name} is currently out of stock. Please try again later.`);
-      return;
-    }
+    const { in_stock } = await apiPost('/api/check-stock', { product_id: selectedProduct.id, site_name: siteName });
+    if (!in_stock) { hideLoading(); alert(`Sorry, ${selectedProduct.name} is currently out of stock.`); return; }
 
     currentPhone = phone;
-currentSite = siteName.replace(/\s+/g, '').toLowerCase();
+    currentSite = siteName.replace(/\s+/g, '').toLowerCase();
 
-// Use prefetched identifier if available, else generate fresh
-identifierCode = prefetchIdentifier || generateIdentifier();
+    const { is_new } = await apiPost('/api/check-customer', { phone, site_name: currentSite });
+    hideLoading();
 
-const result = await apiPost('/api/create-transaction', {
-  phone,
-  site_name: siteName,
-  product_id: selectedProduct.id,
-  identifier_code: identifierCode,
-  device_id: deviceId,
-});
-
-selectedProduct.price = result.amount;
-selectedProduct.name = result.product_name;
-
-localStorage.setItem('kb_last_identifier', identifierCode);
-localStorage.setItem('kb_last_phone', phone);
-
-// Fire bank account request immediately — before showing page 3
-// so the API call is already in-flight (or done) when the UI renders
-const bankAccountPromise = apiPost('/api/get-bank-account', {
-  identifier_code: identifierCode,
-  phone: currentPhone,
-  amount: selectedProduct.price,
-});
-
-hideLoading();
-showPage('page-3');
-setStep(3);
-
-loadBankAccount(bankAccountPromise);
-
+    if (is_new) {
+      showPage('page-2b'); // ask for lodge name
+      return;
+    }
+    await proceedToPayment();
   } catch(e) {
     hideLoading();
-    console.error('goToPage3 error:', e);
     alert('Error: ' + e.message);
   }
+}
+
+async function submitLodgeName() {
+  const lodgeName = document.getElementById('lodge-input').value.trim();
+  if (!lodgeName) { alert('Please enter your lodge name.'); return; }
+  showLoading('Saving...');
+  try {
+    await apiPost('/api/register-customer', { phone: currentPhone, site_name: currentSite, lodge_name: lodgeName });
+    hideLoading();
+    await proceedToPayment();
+  } catch(e) {
+    hideLoading();
+    alert('Error: ' + e.message);
+  }
+}
+
+async function proceedToPayment() {
+  showLoading('Setting up payment...');
+  identifierCode = prefetchIdentifier || generateIdentifier();
+  const result = await apiPost('/api/create-transaction', {
+    phone: currentPhone, site_name: currentSite, product_id: selectedProduct.id,
+    identifier_code: identifierCode, device_id: deviceId,
+  });
+  selectedProduct.price = result.amount;
+  selectedProduct.name = result.product_name;
+  localStorage.setItem('kb_last_identifier', identifierCode);
+  localStorage.setItem('kb_last_phone', currentPhone);
+
+  const bankAccountPromise = apiPost('/api/get-bank-account', {
+    identifier_code: identifierCode, phone: currentPhone, amount: selectedProduct.price,
+  });
+  hideLoading();
+  showPage('page-3');
+  setStep(3);
+  loadBankAccount(bankAccountPromise);
 }
 
 // ============================================
