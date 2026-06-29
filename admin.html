@@ -273,15 +273,23 @@
 
   <div class="card">
     <div class="card-title">📋 Registered Customers</div>
+    <div id="bulk-lodge-bar" style="display:none; align-items:center; gap:8px; margin-bottom:12px; flex-wrap:wrap;">
+      <span id="bulk-lodge-count" style="font-size:0.85rem; color:var(--text2);"></span>
+      <input type="text" class="form-input" id="bulk-lodge-input" placeholder="Lodge name to assign..." style="max-width:220px;">
+      <button class="btn btn-primary btn-sm" onclick="bulkAssignLodge()">✅ Apply to Selected</button>
+      <button class="btn btn-secondary btn-sm" onclick="clearRegisterSelection()">✕ Clear Selection</button>
+    </div>
     <div class="table-wrap">
       <table>
-        <thead><tr><th>Phone</th><th>Site</th><th>Lodge Name</th><th>Source</th><th>Updated</th></tr></thead>
-        <tbody id="register-body"><tr><td colspan="5" style="text-align:center;color:var(--text2);">Loading...</td></tr></tbody>
+        <thead><tr>
+          <th><input type="checkbox" id="register-select-all" onchange="toggleSelectAllRegister(this)"></th>
+          <th>Phone</th><th>Site</th><th>Lodge Name</th><th>Source</th><th>Updated</th>
+        </tr></thead>
+        <tbody id="register-body"><tr><td colspan="6" style="text-align:center;color:var(--text2);">Loading...</td></tr></tbody>
       </table>
     </div>
   </div>
 </div>
-
       
 <!-- NEW CUSTOMERS -->
       <div class="section" id="section-new-customers">
@@ -617,11 +625,69 @@ async function confirmRegisterUpload() {
   loadCustomerRegister();
 }
 
+let selectedRegisterPhones = new Set();
+
 async function loadCustomerRegister() {
+  selectedRegisterPhones.clear();
+  updateBulkLodgeBar();
   const { customers } = await apiGet('/api/admin/customer-register');
   const tbody = document.getElementById('register-body');
-  if (!customers.length) { tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;">No customers</td></tr>'; return; }
-  tbody.innerHTML = customers.map(c => `<tr><td>${c.phone}</td><td>${c.site_name||''}</td><td>${c.lodge_name||''}</td><td>${c.source}</td><td>${new Date(c.updated_at||c.created_at).toLocaleString()}</td></tr>`).join('');
+  if (!customers.length) { tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;">No customers</td></tr>'; return; }
+  tbody.innerHTML = customers.map(c => `<tr>
+    <td><input type="checkbox" class="register-row-check" value="${c.phone}" onchange="toggleRegisterRow('${c.phone}', this.checked)"></td>
+    <td>${c.phone}</td>
+    <td>${c.site_name||''}</td>
+    <td>${c.lodge_name||''}</td>
+    <td>${c.source}</td>
+    <td>${new Date(c.updated_at||c.created_at).toLocaleString()}</td>
+  </tr>`).join('');
+}
+
+function toggleSelectAllRegister(checkbox) {
+  document.querySelectorAll('.register-row-check').forEach(cb => {
+    cb.checked = checkbox.checked;
+    if (checkbox.checked) selectedRegisterPhones.add(cb.value);
+    else selectedRegisterPhones.delete(cb.value);
+  });
+  updateBulkLodgeBar();
+}
+
+function toggleRegisterRow(phone, checked) {
+  if (checked) selectedRegisterPhones.add(phone);
+  else selectedRegisterPhones.delete(phone);
+  updateBulkLodgeBar();
+}
+
+function clearRegisterSelection() {
+  selectedRegisterPhones.clear();
+  document.querySelectorAll('.register-row-check').forEach(cb => cb.checked = false);
+  const selectAll = document.getElementById('register-select-all');
+  if (selectAll) selectAll.checked = false;
+  document.getElementById('bulk-lodge-input').value = '';
+  updateBulkLodgeBar();
+}
+
+function updateBulkLodgeBar() {
+  const bar = document.getElementById('bulk-lodge-bar');
+  const count = selectedRegisterPhones.size;
+  bar.style.display = count > 0 ? 'flex' : 'none';
+  document.getElementById('bulk-lodge-count').textContent = `${count} selected`;
+}
+
+async function bulkAssignLodge() {
+  const phones = [...selectedRegisterPhones];
+  const lodgeName = document.getElementById('bulk-lodge-input').value.trim();
+  if (phones.length === 0) { showToast('❌ No customers selected', 'error'); return; }
+  if (!lodgeName) { showToast('❌ Enter a lodge name', 'error'); return; }
+
+  try {
+    const result = await apiPost('/api/admin/bulk-update-lodge', { phones, lodge_name: lodgeName });
+    showToast(`✅ Updated ${result.updated} customers`, 'success');
+    clearRegisterSelection();
+    loadCustomerRegister();
+  } catch(e) {
+    showToast(`❌ ${e.message}`, 'error');
+  }
 }
       
   
