@@ -796,6 +796,24 @@ app.post('/api/admin/upload-register', verifyAdmin, async (req, res) => {
 });
 
 
+// Admin: bulk-assign lodge name to selected phones (marks source as admin_upload)
+app.post('/api/admin/bulk-update-lodge', verifyAdmin, async (req, res) => {
+  try {
+    const { phones, lodge_name } = req.body;
+    if (!Array.isArray(phones) || phones.length === 0) return res.status(400).json({ error: 'No phones selected' });
+    const lodgeName = sanitizeString(lodge_name || '', 100);
+    if (!lodgeName) return res.status(400).json({ error: 'Lodge name required' });
+
+    const { error } = await supabase.from('customer_register')
+      .update({ lodge_name: lodgeName, source: 'admin_upload', updated_at: new Date().toISOString() })
+      .in('phone', phones);
+    if (error) throw error;
+
+    res.json({ success: true, updated: phones.length });
+  } catch(e) {
+    res.status(500).json({ error: e.message });
+  }
+});
 
 
 // Check transaction status (polling)
