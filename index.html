@@ -715,9 +715,6 @@ async function loadBankAccount(bankAccountPromise) {
     document.getElementById('bank-loading').style.display = 'none';
     document.getElementById('bank-details').style.display = 'block';
 
-    // Start auto-check immediately
-    startAutoCheck();
-
   } catch(e) {
     document.getElementById('bank-loading').style.display = 'none';
     document.getElementById('bank-error-msg').textContent = e.message || 'Could not generate payment account. Please try again.';
@@ -743,7 +740,6 @@ async function checkPayment() {
     const result = await apiGet(`/api/transaction-status?code=${encodeURIComponent(identifierCode)}`);
 
     if (result.status === 'completed' && result.voucher) {
-      if (autoCheckTimer) clearInterval(autoCheckTimer);
       saveVoucherLocally(result.voucher);
       showVoucher(result.voucher, result.product_name || selectedProduct?.name);
       return;
@@ -758,7 +754,6 @@ async function checkPayment() {
           tx_ref: identifierCode,
         });
         if (deliver.success && deliver.voucher) {
-          if (autoCheckTimer) clearInterval(autoCheckTimer);
           saveVoucherLocally(deliver.voucher);
           showVoucher(deliver.voucher, deliver.product_name || selectedProduct?.name);
           return;
