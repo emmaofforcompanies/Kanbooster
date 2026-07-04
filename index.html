@@ -1081,6 +1081,9 @@ function closeTutorial() {
 
 function initTutorial() {
   const url = getTutorialUrl();
+  const tutCard = document.getElementById('wifi-tutorial-card');
+  const tutLink = document.getElementById('wifi-tutorial-link');
+  if (url && tutCard) { tutLink.href = url; tutCard.style.display = 'block'; }
   if (!url) return;
   const isFirst = !localStorage.getItem('kb_returning');
   if (isFirst) {
