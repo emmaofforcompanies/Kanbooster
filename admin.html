@@ -214,6 +214,9 @@
 <input type="text" class="filter-input" id="txn-search" placeholder="Search phone/code...">
           <button class="btn btn-primary" onclick="loadTransactions()">Search</button>
         </div>
+        <div id="txn-total-summary" style="margin-bottom:12px; font-size:0.9rem; font-weight:700; color:var(--accent);"></div>
+        <div class="card">
+          <div class="table-wrap">
         <div class="card">
           <div class="table-wrap">
             <table>
@@ -875,6 +878,12 @@ async function loadTransactions(page = 1) {
         <td>${source}</td>
       </tr>`;
     }).join('');
+    
+    const total = data.reduce((sum, t) => sum + parseFloat(t.amount || 0), 0);
+    document.getElementById('txn-total-summary').textContent = `Total: ₦${total.toLocaleString()} across ${data.length} transactions${count > data.length ? ' (this page)' : ''}`;
+
+    const totalPages = Math.ceil((count||0) / PAGE_SIZE);
+    renderPagination('txn-pagination', page, totalPages, 'loadTransactions');
 
     const totalPages = Math.ceil((count||0) / PAGE_SIZE);
     renderPagination('txn-pagination', page, totalPages, 'loadTransactions');
