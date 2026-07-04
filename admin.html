@@ -884,9 +884,6 @@ async function loadTransactions(page = 1) {
 
     const totalPages = Math.ceil((count||0) / PAGE_SIZE);
     renderPagination('txn-pagination', page, totalPages, 'loadTransactions');
-
-    const totalPages = Math.ceil((count||0) / PAGE_SIZE);
-    renderPagination('txn-pagination', page, totalPages, 'loadTransactions');
   } catch(e) {
     tbody.innerHTML = `<tr><td colspan="8" style="color:var(--danger);">Error: ${e.message}</td></tr>`;
   }
