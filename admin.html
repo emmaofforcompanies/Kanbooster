@@ -489,7 +489,6 @@ async function apiGet(endpoint) {
     headers: adminToken ? { 'x-admin-token': adminToken } : {}
   });
   if (res.status === 429) { throw new Error('Too many login attempts. Try again in 15 minutes.'); }
-if (res.status === 429) { throw new Error('Too many login attempts. Try again in 15 minutes.'); }
   const json = await res.json();
   if (!res.ok) throw new Error(json.error || 'Request failed');
   return json;
