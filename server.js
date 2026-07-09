@@ -1167,11 +1167,22 @@ app.get('/api/admin/transactions', verifyAdmin, async (req, res) => {
 app.get('/api/admin/stats', verifyAdmin, async (req, res) => {
   try {
     const { from, to } = req.query;
-    let query = supabase.from('web_transactions').select('status, amount, site_name, lodge_name');
+    let query = supabase.from('web_transactions').select('status, amount, site_name, phone');
     if (from) query = query.gte('timestamp', from + 'T00:00:00');
     if (to) query = query.lte('timestamp', to + 'T23:59:59');
     const { data } = await query;
-    res.json({ data: data || [] });
+
+    // Enrich with lodge_name from customer_register
+    const phones = [...new Set((data || []).map(t => t.phone).filter(Boolean))];
+    let lodgeMap = {};
+    if (phones.length > 0) {
+      const { data: regs } = await supabase
+        .from('customer_register').select('phone, lodge_name').in('phone', phones);
+      (regs || []).forEach(r => { lodgeMap[r.phone] = r.lodge_name; });
+    }
+    const enriched = (data || []).map(t => ({ ...t, lodge_name: lodgeMap[t.phone] || '' }));
+
+    res.json({ data: enriched });
   } catch(e) {
     res.status(500).json({ error: e.message });
   }
