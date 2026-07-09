@@ -170,12 +170,16 @@
       <div class="section active" id="section-dashboard">
         <div class="section-title">Dashboard</div>
         <div class="filters">
-          <input type="date" class="filter-input" id="dash-from">
-          <input type="date" class="filter-input" id="dash-to">
-          <button class="btn btn-primary" onclick="loadDashboard()">Load</button>
-          <button class="btn btn-secondary" onclick="setDashToday()">Today</button>
-          <button class="btn btn-secondary" onclick="setDashYesterday()">Yesterday</button>
-        </div>
+  <input type="date" class="filter-input" id="dash-from">
+  <input type="date" class="filter-input" id="dash-to">
+  <select class="filter-input" id="dash-site" style="min-width:160px;">
+    <option value="">All Sites</option>
+  </select>
+  <input type="text" class="filter-input" id="dash-lodge" placeholder="Filter by lodge...">
+  <button class="btn btn-primary" onclick="loadDashboard()">Load</button>
+  <button class="btn btn-secondary" onclick="setDashToday()">Today</button>
+  <button class="btn btn-secondary" onclick="setDashYesterday()">Yesterday</button>
+</div>
         <div class="stats-grid">
           <div class="stat-card green"><div class="stat-label">Total Revenue</div><div class="stat-value" id="stat-revenue">—</div><div class="stat-sub">completed sales</div></div>
           <div class="stat-card orange"><div class="stat-label">Total Sales</div><div class="stat-value" id="stat-sales">—</div><div class="stat-sub">vouchers delivered</div></div>
@@ -187,6 +191,13 @@
           <div class="table-wrap">
             <table><thead><tr><th>Site</th><th>Sales</th><th>Revenue</th></tr></thead>
             <tbody id="dash-site-body"><tr><td colspan="3" style="color:var(--text2); text-align:center;">Select date range and click Load</td></tr></tbody></table>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-title">🏨 Sales by Lodge Name</div>
+          <div class="table-wrap">
+            <table><thead><tr><th>Lodge</th><th>Site</th><th>Sales</th><th>Revenue</th></tr></thead>
+            <tbody id="dash-lodge-body"><tr><td colspan="4" style="color:var(--text2); text-align:center;">Select date range and click Load</td></tr></tbody></table>
           </div>
         </div>
       </div>
@@ -790,8 +801,10 @@ function setDashYesterday() {
 }
 
 async function loadDashboard() {
-  const from = document.getElementById('dash-from').value;
-  const to = document.getElementById('dash-to').value;
+  const from  = document.getElementById('dash-from').value;
+  const to    = document.getElementById('dash-to').value;
+  const site  = document.getElementById('dash-site').value;
+  const lodge = document.getElementById('dash-lodge').value.trim().toLowerCase();
   if (!from || !to) { setDashToday(); return; }
 
   try {
@@ -800,14 +813,22 @@ async function loadDashboard() {
 
     let revenue = 0, sales = 0, pending = 0, issues = 0;
     const siteMap = {};
+    const lodgeMap = {};
 
     for (const t of data) {
       const amt = parseFloat(t.amount || 0);
-      if (t.status === 'completed') {
+      const matchSite  = !site  || (t.site_name  || '').toLowerCase() === site.toLowerCase();
+      const matchLodge = !lodge || (t.lodge_name || '').toLowerCase().includes(lodge);
+      if (t.status === 'completed' && matchSite && matchLodge) {
         revenue += amt; sales++;
         const s = (t.site_name || 'unknown').toLowerCase();
         if (!siteMap[s]) siteMap[s] = { count: 0, revenue: 0 };
         siteMap[s].count++; siteMap[s].revenue += amt;
+        const l = (t.lodge_name || '').toLowerCase();
+        if (l) {
+          if (!lodgeMap[l]) lodgeMap[l] = { lodge: t.lodge_name, site: t.site_name, count: 0, revenue: 0 };
+          lodgeMap[l].count++; lodgeMap[l].revenue += amt;
+        }
       }
       if (['pending','confirmed'].includes(t.status)) pending++;
       if (['underpaid','overpaid','out_of_stock'].includes(t.status)) issues++;
@@ -822,7 +843,18 @@ async function loadDashboard() {
     tbody.innerHTML = Object.entries(siteMap).length === 0
       ? '<tr><td colspan="3" style="color:var(--text2); text-align:center;">No sales in this period</td></tr>'
       : Object.entries(siteMap).sort((a,b) => b[1].revenue - a[1].revenue)
-          .map(([site, d]) => `<tr><td>${site}</td><td>${d.count}</td><td style="color:var(--success)">₦${d.revenue.toLocaleString()}</td></tr>`).join('');
+          .map(([s, d]) => `<tr><td>${s}</td><td>${d.count}</td><td style="color:var(--success)">₦${d.revenue.toLocaleString()}</td></tr>`).join('');
+
+    const lodgeTbody = document.getElementById('dash-lodge-body');
+    lodgeTbody.innerHTML = Object.entries(lodgeMap).length === 0
+      ? '<tr><td colspan="4" style="color:var(--text2); text-align:center;">No lodge data in this period</td></tr>'
+      : Object.entries(lodgeMap).sort((a,b) => b[1].revenue - a[1].revenue)
+          .map(([, d]) => `<tr>
+            <td>${d.lodge || '—'}</td>
+            <td style="font-size:0.78rem; color:var(--text2);">${d.site || '—'}</td>
+            <td>${d.count}</td>
+            <td style="color:var(--success);">₦${d.revenue.toLocaleString()}</td>
+          </tr>`).join('');
   } catch(e) { showToast('❌ Dashboard error: ' + e.message, 'error'); }
 }
 
@@ -1106,6 +1138,11 @@ async function loadSiteList() {
     // Populate site filter on Transactions page
     const txnSite = document.getElementById('txn-site');
     if (txnSite) txnSite.innerHTML = '<option value="">All Sites</option>' +
+      sites.map(s => `<option value="${s}">${s}</option>`).join('');
+
+    // Populate site filter on Dashboard
+    const ds = document.getElementById('dash-site');
+    if (ds) ds.innerHTML = '<option value="">All Sites</option>' +
       sites.map(s => `<option value="${s}">${s}</option>`).join('');
 
   } catch(e) { showToast('❌ Could not load sites', 'error'); }
