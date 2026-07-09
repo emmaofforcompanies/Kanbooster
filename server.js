@@ -1167,7 +1167,7 @@ app.get('/api/admin/transactions', verifyAdmin, async (req, res) => {
 app.get('/api/admin/stats', verifyAdmin, async (req, res) => {
   try {
     const { from, to } = req.query;
-    let query = supabase.from('web_transactions').select('status, amount, site_name');
+    let query = supabase.from('web_transactions').select('status, amount, site_name, lodge_name');
     if (from) query = query.gte('timestamp', from + 'T00:00:00');
     if (to) query = query.lte('timestamp', to + 'T23:59:59');
     const { data } = await query;
