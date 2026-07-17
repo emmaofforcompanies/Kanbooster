@@ -612,13 +612,15 @@ app.post('/api/get-paystack-bank-account', async (req, res) => {
 
     const https = require('https');
     const payload = JSON.stringify({
-      email:     `${phone}@kanbooster.website`,
-      amount:    amountKobo,
-      currency:  'NGN',
-      reference: identifierCode,
-      channels:  ['bank_transfer'],
+      email:         `${phone}@kanbooster.website`,
+      amount:        amountKobo,
+      currency:      'NGN',
+      reference:     identifierCode,
+      bank_transfer: {
+        account_expires_at: new Date(Date.now() + 30 * 60 * 1000).toISOString(),
+      },
       metadata: {
-        phone:    phone,
+        phone: phone,
         custom_fields: [{ display_name: 'Phone', variable_name: 'phone', value: phone }],
       },
     });
