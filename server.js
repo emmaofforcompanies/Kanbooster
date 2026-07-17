@@ -595,36 +595,43 @@ res.json({
 });
 
 
-// Get Paystack virtual account for bank transfer
 app.post('/api/get-paystack-bank-account', async (req, res) => {
   try {
     const identifierCode = sanitizeString(req.body.identifier_code || '', 30);
-    const phone = sanitizeString(req.body.phone || '', 15);
-    const amount = parseInt(req.body.amount);
+    const phone          = sanitizeString(req.body.phone || '', 15);
+    const amount         = parseInt(req.body.amount);
 
     if (!identifierCode || !phone || !amount) {
       return res.status(400).json({ error: 'Missing required fields' });
     }
 
-    const https = require('https');
+    // Add 1.5% Paystack fee (capped at ₦2000), rounded up
+    const fee          = Math.min(Math.ceil(amount * 0.015), 2000);
+    const totalAmount  = amount + fee;
+    const amountKobo   = totalAmount * 100;
 
-    // Step 1: Create a Paystack customer
-    const customerPayload = JSON.stringify({
-      email: `${phone}@kanbooster.website`,
-      phone: phone,
-      first_name: 'KanBooster',
-      last_name: 'Customer',
+    const https = require('https');
+    const payload = JSON.stringify({
+      email:     `${phone}@kanbooster.website`,
+      amount:    amountKobo,
+      currency:  'NGN',
+      reference: identifierCode,
+      channels:  ['bank_transfer'],
+      metadata: {
+        phone:    phone,
+        custom_fields: [{ display_name: 'Phone', variable_name: 'phone', value: phone }],
+      },
     });
 
-    const customer = await new Promise((resolve, reject) => {
+    const charge = await new Promise((resolve, reject) => {
       const options = {
         hostname: 'api.paystack.co',
-        path: '/customer',
-        method: 'POST',
+        path:     '/charge',
+        method:   'POST',
         headers: {
-          'Authorization': `Bearer ${process.env.PAYSTACK_SECRET_KEY}`,
-          'Content-Type': 'application/json',
-          'Content-Length': Buffer.byteLength(customerPayload),
+          'Authorization':  `Bearer ${process.env.PAYSTACK_SECRET_KEY}`,
+          'Content-Type':   'application/json',
+          'Content-Length': Buffer.byteLength(payload),
         },
       };
       const r = https.request(options, (response) => {
@@ -633,54 +640,24 @@ app.post('/api/get-paystack-bank-account', async (req, res) => {
         response.on('end', () => { try { resolve(JSON.parse(data)); } catch(e) { reject(new Error('Invalid Paystack response')); } });
       });
       r.on('error', reject);
-      r.write(customerPayload);
+      r.write(payload);
       r.end();
     });
 
-    if (!customer.status) {
-      return res.status(400).json({ error: customer.message || 'Could not create Paystack customer' });
+    if (!charge.status) {
+      console.error('Paystack charge error:', charge);
+      return res.status(400).json({ error: charge.message || 'Could not generate Paystack account' });
     }
 
-    const customerCode = customer.data.customer_code;
-
-    // Step 2: Create dedicated virtual account
-    const dvaPayload = JSON.stringify({
-      customer: customerCode,
-      preferred_bank: 'wema-bank',
-    });
-
-    const dva = await new Promise((resolve, reject) => {
-      const options = {
-        hostname: 'api.paystack.co',
-        path: '/dedicated_account',
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${process.env.PAYSTACK_SECRET_KEY}`,
-          'Content-Type': 'application/json',
-          'Content-Length': Buffer.byteLength(dvaPayload),
-        },
-      };
-      const r = https.request(options, (response) => {
-        let data = '';
-        response.on('data', chunk => data += chunk);
-        response.on('end', () => { try { resolve(JSON.parse(data)); } catch(e) { reject(new Error('Invalid Paystack DVA response')); } });
-      });
-      r.on('error', reject);
-      r.write(dvaPayload);
-      r.end();
-    });
-
-    if (!dva.status) {
-      return res.status(400).json({ error: dva.message || 'Could not generate Paystack virtual account' });
-    }
-
-    const acct = dva.data;
+    const acct = charge.data?.authorization || charge.data;
     res.json({
-      success: true,
-      bank_name: acct.bank?.name || 'Wema Bank',
+      success:        true,
+      bank_name:      acct.bank || acct.bank_name || 'Paystack Transfer',
       account_number: acct.account_number || '',
-      account_name: acct.account_name || 'KanBooster Payment',
-      amount: amount,
+      account_name:   acct.account_name   || 'KanBooster Payment',
+      amount:         totalAmount,
+      fee:            fee,
+      expires_at:     charge.data?.expires_at || '',
     });
 
   } catch(e) {
