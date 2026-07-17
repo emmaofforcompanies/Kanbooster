@@ -610,7 +610,7 @@ const amountKobo   = totalAmount * 100;
 
     const https = require('https');
     const payload = JSON.stringify({
-      email: `emmaofforcompanies@gmail.com`,
+      email: `${phone}@gmail.com`,
       amount:        amountKobo,
       currency:      'NGN',
       reference: identifierCode,
