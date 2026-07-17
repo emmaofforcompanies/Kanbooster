@@ -757,17 +757,6 @@ app.post('/api/paystack-webhook', async (req, res) => {
 
     const expectedAmount = parseFloat(txn.amount);
 
-    if (paidAmount < expectedAmount) {
-      await supabase.from('web_transactions').update({ status: 'underpaid', flw_ref: pstkRef })
-        .eq('payment_code', identifierCode);
-      return;
-    }
-    if (paidAmount > expectedAmount) {
-      await supabase.from('web_transactions').update({ status: 'overpaid', flw_ref: pstkRef })
-        .eq('payment_code', identifierCode);
-      return;
-    }
-
     const voucher = await assignVoucher(txn.product_id, txn.site_name);
     if (!voucher) {
       await supabase.from('web_transactions').update({ status: 'out_of_stock', flw_ref: pstkRef })
@@ -872,10 +861,6 @@ app.post('/api/verify-paystack', purchaseLimiter, async (req, res) => {
     if (verifiedAmount < expectedAmount) {
       await supabase.from('web_transactions').update({ status: 'underpaid', flw_ref: pstkRef }).eq('payment_code', identifierCode);
       return res.status(400).json({ error: 'underpaid', paid: verifiedAmount, expected: expectedAmount });
-    }
-    if (verifiedAmount > expectedAmount) {
-      await supabase.from('web_transactions').update({ status: 'overpaid', flw_ref: pstkRef }).eq('payment_code', identifierCode);
-      return res.status(400).json({ error: 'overpaid', paid: verifiedAmount, expected: expectedAmount });
     }
 
     await supabase.from('web_transactions').update({ status: 'confirmed', flw_ref: pstkRef }).eq('payment_code', identifierCode);
