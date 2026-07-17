@@ -768,16 +768,11 @@ app.post('/api/paystack-webhook', async (req, res) => {
 
     const expectedAmount = parseFloat(txn.amount);
 
-    if (paidAmount < expectedAmount) {
-      await supabase.from('web_transactions').update({ status: 'underpaid', flw_ref: pstkRef })
-        .eq('payment_code', identifierCode);
-      return;
-    }
-    if (paidAmount > expectedAmount) {
-      await supabase.from('web_transactions').update({ status: 'overpaid', flw_ref: pstkRef })
-        .eq('payment_code', identifierCode);
-      return;
-    }
+    if (paidAmount < expectedAmount * 0.99) {
+  await supabase.from('web_transactions').update({ status: 'underpaid', flw_ref: pstkRef })
+    .eq('payment_code', identifierCode);
+  return;
+}
 
     const voucher = await assignVoucher(txn.product_id, txn.site_name);
     if (!voucher) {
