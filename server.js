@@ -657,7 +657,7 @@ app.post('/api/get-paystack-bank-account', async (req, res) => {
       success:        true,
       bank_name:      (typeof acct.bank === 'string' ? acct.bank : acct.bank?.name) || acct.bank_name || 'Paystack Transfer',
       account_number: acct.account_number || '',
-      account_name:   'Afri EO Ltd',
+      account_name:   acct.account_name   || 'PAYSTACK CHECKOUT',
       amount:         totalAmount,
       expires_at:     acct.account_expires_at || charge.data?.account_expires_at || '',
     });
