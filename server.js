@@ -605,10 +605,8 @@ app.post('/api/get-paystack-bank-account', async (req, res) => {
       return res.status(400).json({ error: 'Missing required fields' });
     }
 
-    // Add 1.5% Paystack fee (capped at ₦2000), rounded up
-    const fee          = Math.min(Math.ceil(amount * 0.015), 2000);
-    const totalAmount  = amount + fee;
-    const amountKobo   = totalAmount * 100;
+    const totalAmount  = amount;
+const amountKobo   = totalAmount * 100;
 
     const https = require('https');
     const payload = JSON.stringify({
