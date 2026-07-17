@@ -589,6 +589,100 @@ res.json({
 });
 
 
+// Get Paystack virtual account for bank transfer
+app.post('/api/get-paystack-bank-account', async (req, res) => {
+  try {
+    const identifierCode = sanitizeString(req.body.identifier_code || '', 30);
+    const phone = sanitizeString(req.body.phone || '', 15);
+    const amount = parseInt(req.body.amount);
+
+    if (!identifierCode || !phone || !amount) {
+      return res.status(400).json({ error: 'Missing required fields' });
+    }
+
+    const https = require('https');
+
+    // Step 1: Create a Paystack customer
+    const customerPayload = JSON.stringify({
+      email: `${phone}@kanbooster.website`,
+      phone: phone,
+      first_name: 'KanBooster',
+      last_name: 'Customer',
+    });
+
+    const customer = await new Promise((resolve, reject) => {
+      const options = {
+        hostname: 'api.paystack.co',
+        path: '/customer',
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${process.env.PAYSTACK_SECRET_KEY}`,
+          'Content-Type': 'application/json',
+          'Content-Length': Buffer.byteLength(customerPayload),
+        },
+      };
+      const r = https.request(options, (response) => {
+        let data = '';
+        response.on('data', chunk => data += chunk);
+        response.on('end', () => { try { resolve(JSON.parse(data)); } catch(e) { reject(new Error('Invalid Paystack response')); } });
+      });
+      r.on('error', reject);
+      r.write(customerPayload);
+      r.end();
+    });
+
+    if (!customer.status) {
+      return res.status(400).json({ error: customer.message || 'Could not create Paystack customer' });
+    }
+
+    const customerCode = customer.data.customer_code;
+
+    // Step 2: Create dedicated virtual account
+    const dvaPayload = JSON.stringify({
+      customer: customerCode,
+      preferred_bank: 'wema-bank',
+    });
+
+    const dva = await new Promise((resolve, reject) => {
+      const options = {
+        hostname: 'api.paystack.co',
+        path: '/dedicated_account',
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${process.env.PAYSTACK_SECRET_KEY}`,
+          'Content-Type': 'application/json',
+          'Content-Length': Buffer.byteLength(dvaPayload),
+        },
+      };
+      const r = https.request(options, (response) => {
+        let data = '';
+        response.on('data', chunk => data += chunk);
+        response.on('end', () => { try { resolve(JSON.parse(data)); } catch(e) { reject(new Error('Invalid Paystack DVA response')); } });
+      });
+      r.on('error', reject);
+      r.write(dvaPayload);
+      r.end();
+    });
+
+    if (!dva.status) {
+      return res.status(400).json({ error: dva.message || 'Could not generate Paystack virtual account' });
+    }
+
+    const acct = dva.data;
+    res.json({
+      success: true,
+      bank_name: acct.bank?.name || 'Wema Bank',
+      account_number: acct.account_number || '',
+      account_name: acct.account_name || 'KanBooster Payment',
+      amount: amount,
+    });
+
+  } catch(e) {
+    console.error('get-paystack-bank-account error:', e);
+    res.status(500).json({ error: e.message });
+  }
+});
+
 // ============================================
 // FLUTTERWAVE WEBHOOK
 // ============================================
