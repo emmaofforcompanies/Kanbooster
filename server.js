@@ -650,15 +650,15 @@ app.post('/api/get-paystack-bank-account', async (req, res) => {
     }
 
     console.log('Paystack charge response:', JSON.stringify(charge.data, null, 2));
-    const acct = charge.data?.bank_transfer || charge.data?.authorization || charge.data;
+    const acct = charge.data;
     res.json({
-      success:        true,
-      bank_name:      (typeof acct.bank === 'string' ? acct.bank : acct.bank?.name) || acct.bank_name || 'Paystack Transfer',
-      account_number: acct.account_number || '',
-      account_name:   acct.account_name   || 'PAYSTACK CHECKOUT',
-      amount:         totalAmount,
-      expires_at:     acct.account_expires_at || charge.data?.account_expires_at || '',
-    });
+  success:        true,
+  bank_name:      acct.bank?.name || acct.bank || 'Paystack Transfer',
+  account_number: acct.account_number || '',
+  account_name:   acct.account_name || 'Afri EO Ltd',
+  amount:         totalAmount,
+  expires_at:     acct.account_expires_at || '',
+});
 
   } catch(e) {
     console.error('get-paystack-bank-account error:', e);
