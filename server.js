@@ -651,15 +651,15 @@ app.post('/api/get-paystack-bank-account', async (req, res) => {
       return res.status(400).json({ error: charge.message || 'Could not generate Paystack account' });
     }
 
-    const acct = charge.data?.authorization || charge.data;
+    console.log('Paystack charge response:', JSON.stringify(charge.data, null, 2));
+    const acct = charge.data?.bank_transfer || charge.data?.authorization || charge.data;
     res.json({
       success:        true,
-      bank_name:      acct.bank || acct.bank_name || 'Paystack Transfer',
+      bank_name:      acct.bank_name || acct.bank || 'Paystack Transfer',
       account_number: acct.account_number || '',
-      account_name:   acct.account_name   || 'KanBooster Payment',
+      account_name:   acct.account_name   || 'PAYSTACK CHECKOUT',
       amount:         totalAmount,
-      fee:            fee,
-      expires_at:     charge.data?.expires_at || '',
+      expires_at:     acct.account_expires_at || charge.data?.account_expires_at || '',
     });
 
   } catch(e) {
