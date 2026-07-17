@@ -913,11 +913,6 @@ app.post('/api/verify-paystack', purchaseLimiter, async (req, res) => {
           .eq('payment_code', identifierCode);
         return res.status(400).json({ error: 'underpaid', paid: verifiedAmount, expected: expectedAmount });
       }
-      if (verifiedAmount > expectedAmount) {
-        await supabase.from('web_transactions').update({ status: 'overpaid', flw_ref: flwRef })
-          .eq('payment_code', identifierCode);
-        return res.status(400).json({ error: 'overpaid', paid: verifiedAmount, expected: expectedAmount });
-      }
     }
 
     // Update to confirmed
