@@ -656,7 +656,7 @@ const amountKobo   = totalAmount * 100;
   bank_name:      acct.bank?.name || acct.bank || 'Paystack Transfer',
   account_number: acct.account_number || '',
   account_name:   acct.account_name || 'Afri EO Ltd',
-  amount:         totalAmount,
+  amount: charge.data?.amount ? charge.data.amount / 100 : totalAmount,
   expires_at:     acct.account_expires_at || '',
 });
 
