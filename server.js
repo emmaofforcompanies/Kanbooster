@@ -700,17 +700,6 @@ app.post('/api/flw-webhook', async (req, res) => {
 
     const expectedAmount = parseFloat(txn.amount);
 
-    if (paidAmount < expectedAmount) {
-      await supabase.from('web_transactions').update({ status: 'underpaid', flw_ref: flwRef })
-        .eq('payment_code', identifierCode);
-      return;
-    }
-    if (paidAmount > expectedAmount) {
-      await supabase.from('web_transactions').update({ status: 'overpaid', flw_ref: flwRef })
-        .eq('payment_code', identifierCode);
-      return;
-    }
-
     // Exact match — deliver voucher
     const voucher = await assignVoucher(txn.product_id, txn.site_name);
     if (!voucher) {
