@@ -319,22 +319,27 @@
 
       <!-- Payment Options Card -->
       <div class="card" id="payment-summary-card">
-        <div class="card-title">💳 Choose Payment Method</div>
+        <div class="card-title">🏦 Bank Transfer</div>
 
-        <!-- Summary row -->
-        <div style="background:var(--surface2); border:1px solid var(--border); border-radius:12px; padding:14px; margin-bottom:16px; display:flex; justify-content:space-between; align-items:center;">
-          <span style="font-size:0.85rem; color:var(--text2);">Amount to pay</span>
-          <span id="pay-amount-display" style="font-weight:700; font-size:1.1rem; color:var(--success);"></span>
+        <!-- Payment provider tabs -->
+        <div style="display:flex; background:var(--surface2); border-radius:12px; padding:4px; margin-bottom:20px; gap:4px;">
+          <button id="tab-btn-flw" onclick="switchPaymentTab('flw')"
+            style="flex:1; padding:10px 6px; border-radius:9px; border:none; background:var(--surface); color:var(--accent); font-family:'Syne',sans-serif; font-size:0.78rem; font-weight:700; cursor:pointer; box-shadow:0 2px 8px rgba(0,0,0,0.3); transition:all 0.2s; letter-spacing:0.3px;">
+            🏦 Flutterwave
+          </button>
+          <button id="tab-btn-pstk" onclick="switchPaymentTab('pstk')"
+            style="flex:1; padding:10px 6px; border-radius:9px; border:none; background:transparent; color:var(--text2); font-family:'Syne',sans-serif; font-size:0.78rem; font-weight:700; cursor:pointer; transition:all 0.2s; letter-spacing:0.3px;">
+            💚 Paystack
+          </button>
         </div>
 
-        <!-- Option 1: Flutterwave -->
-        <div style="margin-bottom:12px;">
-          <div style="font-size:0.72rem; color:var(--text2); letter-spacing:1px; text-transform:uppercase; margin-bottom:6px;">Option 1 — Bank Transfer</div>
-          <div id="bank-loading" style="text-align:center; padding:14px 0; color:var(--text2); font-size:0.85rem;">
+        <!-- Flutterwave tab content -->
+        <div id="tab-content-flw">
+          <div id="bank-loading" style="text-align:center; padding:20px 0; color:var(--text2); font-size:0.85rem;">
             <span class="flicker">Generating account...</span>
           </div>
           <div id="bank-details" style="display:none;">
-            <div style="background:var(--surface2); border:1px solid var(--border); border-radius:12px; padding:14px; margin-bottom:10px;">
+            <div style="background:var(--surface2); border:1px solid var(--border); border-radius:12px; padding:14px; margin-bottom:12px;">
               <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
                 <span style="font-size:0.75rem; color:var(--text2); text-transform:uppercase;">Bank</span>
                 <span id="bank-name" style="font-weight:600; color:var(--text);"></span>
@@ -343,7 +348,7 @@
                 <span style="font-size:0.75rem; color:var(--text2); text-transform:uppercase;">Account No.</span>
                 <div style="display:flex; align-items:center; gap:8px;">
                   <span id="bank-account-number" style="font-family:'JetBrains Mono',monospace; font-size:1.1rem; color:var(--accent); font-weight:700; letter-spacing:2px;"></span>
-                  <button onclick="copyAccountNumber()" style="background:var(--border); border:none; border-radius:6px; color:var(--text); padding:4px 8px; cursor:pointer; font-size:0.75rem;">Copy</button>
+                  <button onclick="copyAccountNumber('bank-account-number')" style="background:var(--border); border:none; border-radius:6px; color:var(--text); padding:4px 8px; cursor:pointer; font-size:0.75rem;">Copy</button>
                 </div>
               </div>
               <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
@@ -359,7 +364,7 @@
                 <span id="bank-expiry" style="color:var(--warning); font-size:0.85rem;"></span>
               </div>
             </div>
-            <div class="alert alert-info" style="font-size:0.8rem; margin-bottom:10px;">
+            <div class="alert alert-info" style="font-size:0.8rem; margin-bottom:12px;">
               ⚠️ Transfer the <strong>exact amount</strong>. Account expires in 30 mins. Voucher appears automatically.
             </div>
             <button class="btn btn-success" onclick="checkPayment()" id="btn-check-payment">✅ I've Paid — Check Now</button>
@@ -369,22 +374,48 @@
           </div>
         </div>
 
-        <!-- Divider -->
-        <div style="display:flex; align-items:center; gap:10px; margin:16px 0;">
-          <div style="flex:1; height:1px; background:var(--border);"></div>
-          <span style="font-size:0.75rem; color:var(--text2); text-transform:uppercase; letter-spacing:1px;">or</span>
-          <div style="flex:1; height:1px; background:var(--border);"></div>
+        <!-- Paystack tab content -->
+        <div id="tab-content-pstk" style="display:none;">
+          <div id="pstk-bank-loading" style="text-align:center; padding:20px 0; color:var(--text2); font-size:0.85rem;">
+            <span class="flicker">Generating account...</span>
+          </div>
+          <div id="pstk-bank-details" style="display:none;">
+            <div style="background:var(--surface2); border:1px solid var(--border); border-radius:12px; padding:14px; margin-bottom:12px;">
+              <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
+                <span style="font-size:0.75rem; color:var(--text2); text-transform:uppercase;">Bank</span>
+                <span id="pstk-bank-name" style="font-weight:600; color:var(--text);"></span>
+              </div>
+              <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
+                <span style="font-size:0.75rem; color:var(--text2); text-transform:uppercase;">Account No.</span>
+                <div style="display:flex; align-items:center; gap:8px;">
+                  <span id="pstk-account-number" style="font-family:'JetBrains Mono',monospace; font-size:1.1rem; color:var(--accent); font-weight:700; letter-spacing:2px;"></span>
+                  <button onclick="copyAccountNumber('pstk-account-number')" style="background:var(--border); border:none; border-radius:6px; color:var(--text); padding:4px 8px; cursor:pointer; font-size:0.75rem;">Copy</button>
+                </div>
+              </div>
+              <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
+                <span style="font-size:0.75rem; color:var(--text2); text-transform:uppercase;">Account Name</span>
+                <span id="pstk-account-name" style="color:var(--text); font-size:0.85rem;"></span>
+              </div>
+              <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
+                <span style="font-size:0.75rem; color:var(--text2); text-transform:uppercase;">Amount</span>
+                <span id="pstk-amount" style="color:var(--success); font-weight:700;"></span>
+              </div>
+              <div style="display:flex; justify-content:space-between; align-items:center;">
+                <span style="font-size:0.75rem; color:var(--text2); text-transform:uppercase;">Fee</span>
+                <span id="pstk-fee" style="color:var(--warning); font-size:0.85rem;"></span>
+              </div>
+            </div>
+            <div class="alert alert-info" style="font-size:0.8rem; margin-bottom:12px;">
+              ⚠️ Transfer the <strong>exact amount</strong> shown. Includes 1.5% Paystack fee. Voucher appears automatically.
+            </div>
+            <button class="btn btn-success" onclick="checkPayment()" id="btn-check-payment-pstk">✅ I've Paid — Check Now</button>
+          </div>
+          <div id="pstk-bank-error" style="display:none;">
+            <div class="alert alert-danger" id="pstk-bank-error-msg"></div>
+          </div>
         </div>
 
-        <!-- Option 2: Paystack Card -->
-        <div style="margin-bottom:16px;">
-          <div style="font-size:0.72rem; color:var(--text2); letter-spacing:1px; text-transform:uppercase; margin-bottom:6px;">Option 2 — Card / USSD / More</div>
-          <button class="btn btn-primary" id="btn-pay-paystack" onclick="openPaystack()" style="width:100%; background:var(--surface2); border:2px solid var(--border); color:var(--text);">
-            💳 Pay with Paystack
-          </button>
-        </div>
-
-        <button class="btn btn-secondary" onclick="goToPage2()" style="margin-top:4px;">← Back</button>
+        <button class="btn btn-secondary" onclick="goToPage2()" style="margin-top:16px;">← Back</button>
         <div style="margin-top:12px; font-size:0.78rem; color:var(--text2); text-align:center;">
           Need help? Call <strong id="support-phone-display"></strong>
         </div>
@@ -715,8 +746,9 @@ async function proceedToPayment() {
     identifier_code: identifierCode, device_id: deviceId,
   });
   selectedProduct.price = result.amount;
-  selectedProduct.name = result.product_name;
-  pstkPublicKey = result.pstk_public_key || '';
+  selectedProduct.name  = result.product_name;
+  pstkPublicKey         = result.pstk_public_key || '';
+  pstkLoaded            = false;
   localStorage.setItem('kb_last_identifier', identifierCode);
   localStorage.setItem('kb_last_phone', currentPhone);
 
@@ -730,52 +762,57 @@ async function proceedToPayment() {
 }
 
 // ============================================
-// OPEN FLUTTERWAVE
+// PAYMENT TABS
 // ============================================
 let activePaymentTab = 'flw';
+let pstkPublicKey    = '';
+let pstkLoaded       = false;
 
 function switchPaymentTab(tab) {
   activePaymentTab = tab;
-  const flwBtn  = document.getElementById('tab-flw');
-  const pstkBtn = document.getElementById('tab-pstk');
-  const flwDiv  = document.getElementById('bank-details-flw');
-  const pstkDiv = document.getElementById('bank-details-pstk');
+  const flwBtn     = document.getElementById('tab-btn-flw');
+  const pstkBtn    = document.getElementById('tab-btn-pstk');
+  const flwContent = document.getElementById('tab-content-flw');
+  const pstkContent= document.getElementById('tab-content-pstk');
 
   if (tab === 'flw') {
-    flwBtn.style.background  = 'var(--accent)';
-    flwBtn.style.color       = '#fff';
-    flwBtn.style.borderColor = 'var(--accent)';
-    pstkBtn.style.background  = 'var(--surface2)';
-    pstkBtn.style.color       = 'var(--text2)';
-    pstkBtn.style.borderColor = 'var(--border)';
-    flwDiv.style.display  = 'block';
-    pstkDiv.style.display = 'none';
+    flwBtn.style.background  = 'var(--surface)';
+    flwBtn.style.color       = 'var(--accent)';
+    flwBtn.style.boxShadow   = '0 2px 8px rgba(0,0,0,0.3)';
+    pstkBtn.style.background = 'transparent';
+    pstkBtn.style.color      = 'var(--text2)';
+    pstkBtn.style.boxShadow  = 'none';
+    flwContent.style.display  = 'block';
+    pstkContent.style.display = 'none';
   } else {
-    pstkBtn.style.background  = 'var(--accent)';
-    pstkBtn.style.color       = '#fff';
-    pstkBtn.style.borderColor = 'var(--accent)';
-    flwBtn.style.background  = 'var(--surface2)';
+    pstkBtn.style.background = 'var(--surface)';
+    pstkBtn.style.color      = '#36d07e';
+    pstkBtn.style.boxShadow  = '0 2px 8px rgba(0,0,0,0.3)';
+    flwBtn.style.background  = 'transparent';
     flwBtn.style.color       = 'var(--text2)';
-    flwBtn.style.borderColor = 'var(--border)';
-    pstkDiv.style.display = 'block';
-    flwDiv.style.display  = 'none';
+    flwBtn.style.boxShadow   = 'none';
+    pstkContent.style.display = 'block';
+    flwContent.style.display  = 'none';
+
+    // Load Paystack account on first switch to tab
+    if (!pstkLoaded) {
+      pstkLoaded = true;
+      loadPaystackBankAccount();
+    }
   }
 }
-
-let pstkPublicKey = '';
 
 async function loadBankAccount(bankAccountPromise) {
   document.getElementById('bank-loading').style.display = 'block';
   document.getElementById('bank-details').style.display = 'none';
-  document.getElementById('bank-error').style.display = 'none';
-  document.getElementById('pay-amount-display').textContent = `₦${parseInt(selectedProduct.price).toLocaleString()}`;
+  document.getElementById('bank-error').style.display   = 'none';
 
   try {
     const result = await bankAccountPromise;
-    document.getElementById('bank-name').textContent = result.bank_name;
+    document.getElementById('bank-name').textContent           = result.bank_name;
     document.getElementById('bank-account-number').textContent = result.account_number;
-    document.getElementById('bank-account-name').textContent = result.account_name;
-    document.getElementById('bank-amount').textContent = `₦${parseInt(result.amount).toLocaleString()}`;
+    document.getElementById('bank-account-name').textContent   = result.account_name;
+    document.getElementById('bank-amount').textContent         = `₦${parseInt(result.amount).toLocaleString()}`;
 
     if (result.expires_at) {
       const expiry = new Date(result.expires_at);
@@ -788,54 +825,38 @@ async function loadBankAccount(bankAccountPromise) {
     document.getElementById('bank-details').style.display = 'block';
 
   } catch(e) {
-    document.getElementById('bank-loading').style.display = 'none';
-    document.getElementById('bank-error-msg').textContent = e.message || 'Could not generate payment account. Please try again.';
-    document.getElementById('bank-error').style.display = 'block';
+    document.getElementById('bank-loading').style.display    = 'none';
+    document.getElementById('bank-error-msg').textContent    = e.message || 'Could not generate payment account. Please try again.';
+    document.getElementById('bank-error').style.display      = 'block';
   }
 }
 
-function openPaystack() {
-  const btn = document.getElementById('btn-pay-paystack');
-  btn.disabled = true;
-  btn.textContent = '⏳ Opening...';
+async function loadPaystackBankAccount() {
+  document.getElementById('pstk-bank-loading').style.display = 'block';
+  document.getElementById('pstk-bank-details').style.display = 'none';
+  document.getElementById('pstk-bank-error').style.display   = 'none';
 
-  const handler = PaystackPop.setup({
-    key: pstkPublicKey,
-    email: `${currentPhone}@kanbooster.website`,
-    amount: selectedProduct.price * 100, // Paystack uses kobo
-    currency: 'NGN',
-    ref: identifierCode,
-    metadata: { phone: currentPhone, site: currentSite },
-    onSuccess: async function(transaction) {
-      btn.disabled = false;
-      btn.textContent = '💳 Pay with Paystack';
-      showPage('page-3');
-      document.getElementById('payment-summary-card').style.display = 'none';
-      document.getElementById('waiting-card').style.display = 'block';
-      startPolling();
+  try {
+    const result = await apiPost('/api/get-paystack-bank-account', {
+      identifier_code: identifierCode,
+      phone:           currentPhone,
+      amount:          selectedProduct.price,
+    });
 
-      // Also verify server-side immediately
-      try {
-        const verify = await apiPost('/api/verify-paystack', {
-          identifier_code: identifierCode,
-          pstk_ref: String(transaction.reference),
-        });
-        if (verify.success && verify.voucher) {
-          stopPolling();
-          saveVoucherLocally(verify.voucher);
-          showVoucher(verify.voucher, selectedProduct.name);
-        }
-      } catch(e) {
-        console.error('Paystack verify error:', e);
-        // polling will catch it
-      }
-    },
-    onCancel: function() {
-      btn.disabled = false;
-      btn.textContent = '💳 Pay with Paystack';
-    },
-  });
-  handler.openIframe();
+    document.getElementById('pstk-bank-name').textContent    = result.bank_name;
+    document.getElementById('pstk-account-number').textContent = result.account_number;
+    document.getElementById('pstk-account-name').textContent  = result.account_name;
+    document.getElementById('pstk-amount').textContent        = `₦${parseInt(result.amount).toLocaleString()}`;
+    document.getElementById('pstk-fee').textContent           = `₦${parseInt(result.fee).toLocaleString()} Paystack fee included`;
+
+    document.getElementById('pstk-bank-loading').style.display = 'none';
+    document.getElementById('pstk-bank-details').style.display = 'block';
+
+  } catch(e) {
+    document.getElementById('pstk-bank-loading').style.display  = 'none';
+    document.getElementById('pstk-bank-error-msg').textContent  = e.message || 'Could not generate Paystack account. Try Flutterwave tab.';
+    document.getElementById('pstk-bank-error').style.display    = 'block';
+  }
 }
 
 function copyAccountNumber(elementId) {
