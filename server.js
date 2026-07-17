@@ -622,7 +622,6 @@ app.post('/api/get-paystack-bank-account', async (req, res) => {
     custom_fields: [{ display_name: 'Phone', variable_name: 'phone', value: phone }],
   },
 });
-    });
 
     const charge = await new Promise((resolve, reject) => {
       const options = {
