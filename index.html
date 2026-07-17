@@ -365,7 +365,7 @@
               </div>
             </div>
             <div class="alert alert-info" style="font-size:0.8rem; margin-bottom:12px;">
-              ⚠️ Transfer the <strong>exact amount</strong>. Account expires in 30 mins. Voucher appears automatically.
+              ⚠️ Transfer the <strong>exact amount</strong>. Account expires in 30 mins. Click "I've Paid — Check Now" to get voucher.
             </div>
             <button class="btn btn-success" onclick="checkPayment()" id="btn-check-payment">✅ I've Paid — Check Now</button>
           </div>
@@ -401,8 +401,8 @@
                 <span id="pstk-amount" style="color:var(--success); font-weight:700;"></span>
               </div>
               <div style="display:flex; justify-content:space-between; align-items:center;">
-                <span style="font-size:0.75rem; color:var(--text2); text-transform:uppercase;">Fee</span>
-                <span id="pstk-fee" style="color:var(--warning); font-size:0.85rem;"></span>
+                <span style="font-size:0.75rem; color:var(--text2); text-transform:uppercase;">Expires</span>
+                <span id="pstk-expiry" style="color:var(--warning); font-size:0.85rem;"></span>
               </div>
             </div>
             <div class="alert alert-info" style="font-size:0.8rem; margin-bottom:12px;">
@@ -847,7 +847,12 @@ async function loadPaystackBankAccount() {
     document.getElementById('pstk-account-number').textContent = result.account_number;
     document.getElementById('pstk-account-name').textContent  = result.account_name;
     document.getElementById('pstk-amount').textContent        = `₦${parseInt(result.amount).toLocaleString()}`;
-    document.getElementById('pstk-fee').textContent           = `₦${parseInt(result.fee).toLocaleString()} Paystack fee included`;
+    if (result.expires_at) {
+      const expiry = new Date(result.expires_at);
+      document.getElementById('pstk-expiry').textContent = expiry.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    } else {
+      document.getElementById('pstk-expiry').textContent = '30 minutes';
+    }
 
     document.getElementById('pstk-bank-loading').style.display = 'none';
     document.getElementById('pstk-bank-details').style.display = 'block';
