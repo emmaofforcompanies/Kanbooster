@@ -615,7 +615,7 @@ app.post('/api/get-paystack-bank-account', async (req, res) => {
       email:         `${phone}@kanbooster.website`,
       amount:        amountKobo,
       currency:      'NGN',
-      reference:     identifierCode,
+      reference: `${identifierCode}_${Date.now()}`,
       bank_transfer: {
         account_expires_at: new Date(Date.now() + 30 * 60 * 1000).toISOString(),
       },
