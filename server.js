@@ -510,7 +510,8 @@ const product = { name: spProduct.name, price: finalPrice };
       identifier: identifierCode,
       amount: finalPrice,
       product_name: product.name,
-      flw_public_key: process.env.FLW_PUBLIC_KEY,  // only public key sent to browser
+      flw_public_key: process.env.FLW_PUBLIC_KEY,
+      pstk_public_key: process.env.PAYSTACK_PUBLIC_KEY,
     });
   } catch(e) {
     console.error('create-transaction error:', e);
@@ -828,6 +829,70 @@ app.post('/api/paystack-webhook', async (req, res) => {
   }
 });
 
+// ============================================
+// PAYSTACK WEBHOOK
+// ============================================
+app.post('/api/paystack-webhook', async (req, res) => {
+  try {
+    const crypto = require('crypto');
+    const hash = crypto.createHmac('sha512', process.env.PAYSTACK_SECRET_KEY)
+      .update(JSON.stringify(req.body)).digest('hex');
+
+    if (hash !== req.headers['x-paystack-signature']) {
+      console.warn('Paystack webhook: invalid signature');
+      return res.status(401).end();
+    }
+
+    res.status(200).json({ received: true }); // acknowledge immediately
+
+    const event = req.body;
+    if (event.event !== 'charge.success') return;
+
+    const identifierCode = event.data?.reference;
+    const paidAmount     = parseFloat(event.data?.amount) / 100; // Paystack sends kobo
+    const pstkRef        = String(event.data?.id || '');
+
+    if (!identifierCode) return;
+
+    const { data: txn } = await supabase
+      .from('web_transactions').select('*').eq('payment_code', identifierCode).single();
+    if (!txn) return;
+
+    if (txn.status === 'completed' && txn.voucher_code) return;
+
+    const expectedAmount = parseFloat(txn.amount);
+
+    if (paidAmount < expectedAmount) {
+      await supabase.from('web_transactions').update({ status: 'underpaid', flw_ref: pstkRef })
+        .eq('payment_code', identifierCode);
+      return;
+    }
+    if (paidAmount > expectedAmount) {
+      await supabase.from('web_transactions').update({ status: 'overpaid', flw_ref: pstkRef })
+        .eq('payment_code', identifierCode);
+      return;
+    }
+
+    const voucher = await assignVoucher(txn.product_id, txn.site_name);
+    if (!voucher) {
+      await supabase.from('web_transactions').update({ status: 'out_of_stock', flw_ref: pstkRef })
+        .eq('payment_code', identifierCode);
+      return;
+    }
+
+    await supabase.from('web_transactions').update({
+      status: 'completed',
+      voucher_code: voucher,
+      sent: 'delivered',
+      flw_ref: pstkRef,
+      delivered_at: new Date().toISOString(),
+    }).eq('payment_code', identifierCode);
+
+  } catch(e) {
+    console.error('Paystack webhook error:', e);
+  }
+});
+
 // Confirm payment and deliver voucher (called after FLW callback)
 app.post('/api/confirm-payment', purchaseLimiter, async (req, res) => {
   try {
@@ -863,6 +928,83 @@ app.post('/api/confirm-payment', purchaseLimiter, async (req, res) => {
           r.on('error', reject);
           r.end();
         });
+
+        // Verify Paystack payment (called from frontend after inline callback)
+app.post('/api/verify-paystack', purchaseLimiter, async (req, res) => {
+  try {
+    const identifierCode = sanitizeString(req.body.identifier_code || '', 30);
+    const pstkRef        = sanitizeString(req.body.pstk_ref || '', 100);
+
+    if (!isValidIdentifier(identifierCode)) return res.status(400).json({ error: 'Invalid identifier' });
+
+    const { data: txn } = await supabase
+      .from('web_transactions').select('*').eq('payment_code', identifierCode).single();
+    if (!txn) return res.status(404).json({ error: 'Transaction not found' });
+
+    if (txn.status === 'completed' && txn.voucher_code) {
+      return res.json({ success: true, voucher: txn.voucher_code });
+    }
+
+    // Verify with Paystack API
+    const https = require('https');
+    const verifyResponse = await new Promise((resolve, reject) => {
+      const options = {
+        hostname: 'api.paystack.co',
+        path: `/transaction/verify/${encodeURIComponent(identifierCode)}`,
+        method: 'GET',
+        headers: {
+          'Authorization': `Bearer ${process.env.PAYSTACK_SECRET_KEY}`,
+          'Content-Type': 'application/json',
+          'User-Agent': 'Mozilla/5.0 (compatible; KanBooster/1.0)',
+        },
+      };
+      const r = https.request(options, (resp) => {
+        let data = '';
+        resp.on('data', chunk => data += chunk);
+        resp.on('end', () => resolve(JSON.parse(data)));
+      });
+      r.on('error', reject);
+      r.end();
+    });
+
+    if (!verifyResponse.status || verifyResponse.data?.status !== 'success') {
+      return res.status(400).json({ error: 'Payment not confirmed by Paystack' });
+    }
+
+    const verifiedAmount = parseFloat(verifyResponse.data.amount) / 100;
+    const expectedAmount = parseFloat(txn.amount);
+
+    if (verifiedAmount < expectedAmount) {
+      await supabase.from('web_transactions').update({ status: 'underpaid', flw_ref: pstkRef }).eq('payment_code', identifierCode);
+      return res.status(400).json({ error: 'underpaid', paid: verifiedAmount, expected: expectedAmount });
+    }
+    if (verifiedAmount > expectedAmount) {
+      await supabase.from('web_transactions').update({ status: 'overpaid', flw_ref: pstkRef }).eq('payment_code', identifierCode);
+      return res.status(400).json({ error: 'overpaid', paid: verifiedAmount, expected: expectedAmount });
+    }
+
+    await supabase.from('web_transactions').update({ status: 'confirmed', flw_ref: pstkRef }).eq('payment_code', identifierCode);
+
+    const voucher = await assignVoucher(txn.product_id, txn.site_name);
+    if (!voucher) {
+      await supabase.from('web_transactions').update({ status: 'out_of_stock' }).eq('payment_code', identifierCode);
+      return res.status(400).json({ error: 'out_of_stock' });
+    }
+
+    await supabase.from('web_transactions').update({
+      status: 'completed',
+      voucher_code: voucher,
+      sent: 'delivered',
+      delivered_at: new Date().toISOString(),
+    }).eq('payment_code', identifierCode);
+
+    return res.json({ success: true, voucher });
+
+  } catch(e) {
+    console.error('verify-paystack error:', e);
+    res.status(500).json({ error: e.message });
+  }
+});
 
         if (verifyResponse.status === 'success') {
           verifiedAmount = parseFloat(verifyResponse.data.amount);
