@@ -655,9 +655,9 @@ app.post('/api/get-paystack-bank-account', async (req, res) => {
     const acct = charge.data?.bank_transfer || charge.data?.authorization || charge.data;
     res.json({
       success:        true,
-      bank_name:      acct.bank_name || acct.bank || 'Paystack Transfer',
+      bank_name:      (typeof acct.bank === 'string' ? acct.bank : acct.bank?.name) || acct.bank_name || 'Paystack Transfer',
       account_number: acct.account_number || '',
-      account_name:   acct.account_name   || 'PAYSTACK CHECKOUT',
+      account_name:   'Afri EO Ltd',
       amount:         totalAmount,
       expires_at:     acct.account_expires_at || charge.data?.account_expires_at || '',
     });
@@ -1179,12 +1179,16 @@ app.post('/api/retrieve-voucher', async (req, res) => {
       .order('timestamp', { ascending: false })
       .limit(3);
 
-    // For each pending transaction, check FLW and complete it on the spot
+    // For each pending transaction, check FLW then Paystack and complete on the spot
     if (pending && pending.length > 0) {
+      const https = require('https');
       for (const txn of pending) {
+        let paid = false;
+        let ref  = '';
+
+        // Check Flutterwave first
         try {
           const flwSearch = await new Promise((resolve, reject) => {
-            const https = require('https');
             const options = {
               hostname: 'api.flutterwave.com',
               path: `/v3/transactions?tx_ref=${encodeURIComponent(txn.payment_code)}`,
@@ -1199,28 +1203,56 @@ app.post('/api/retrieve-voucher', async (req, res) => {
             r.on('error', reject);
             r.end();
           });
-
           const flwTxn = flwSearch?.data?.[0];
           if (flwTxn && flwTxn.status === 'successful') {
-            // Payment confirmed — assign voucher now
-            const voucherCode = await assignVoucher(txn.product_id, txn.site_name);
-            if (voucherCode) {
-              await supabase.from('web_transactions').update({
-                status: 'completed',
-                voucher_code: voucherCode,
-                sent: 'delivered',
-                delivery_method: 'web',
-                flw_ref: flwTxn.flw_ref,
-                delivered_at: new Date().toISOString(),
-              }).eq('payment_code', txn.payment_code);
-
-              // Add to completed list so it shows up below
-              if (!data) data = [];
-              data.push({ ...txn, voucher_code: voucherCode, status: 'completed' });
-            }
+            paid = true;
+            ref  = flwTxn.flw_ref || '';
           }
         } catch(e) {
-          console.error('retrieve: pending FLW check error:', e.message);
+          console.error('retrieve: FLW check error:', e.message);
+        }
+
+        // If not found on FLW, check Paystack
+        if (!paid) {
+          try {
+            const pstkVerify = await new Promise((resolve, reject) => {
+              const options = {
+                hostname: 'api.paystack.co',
+                path: `/transaction/verify/${encodeURIComponent(txn.payment_code)}`,
+                method: 'GET',
+                headers: { 'Authorization': `Bearer ${process.env.PAYSTACK_SECRET_KEY}` },
+              };
+              const r = https.request(options, (response) => {
+                let d = '';
+                response.on('data', chunk => d += chunk);
+                response.on('end', () => { try { resolve(JSON.parse(d)); } catch(e) { reject(e); } });
+              });
+              r.on('error', reject);
+              r.end();
+            });
+            if (pstkVerify?.data?.status === 'success') {
+              paid = true;
+              ref  = String(pstkVerify.data.id || '');
+            }
+          } catch(e) {
+            console.error('retrieve: Paystack check error:', e.message);
+          }
+        }
+
+        if (paid) {
+          const voucherCode = await assignVoucher(txn.product_id, txn.site_name);
+          if (voucherCode) {
+            await supabase.from('web_transactions').update({
+              status: 'completed',
+              voucher_code: voucherCode,
+              sent: 'delivered',
+              delivery_method: 'web',
+              flw_ref: ref,
+              delivered_at: new Date().toISOString(),
+            }).eq('payment_code', txn.payment_code);
+            if (!data) data = [];
+            data.push({ ...txn, voucher_code: voucherCode, status: 'completed' });
+          }
         }
       }
     }
