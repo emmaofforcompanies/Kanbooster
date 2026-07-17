@@ -846,7 +846,7 @@ async function loadPaystackBankAccount() {
     document.getElementById('pstk-bank-name').textContent    = result.bank_name;
     document.getElementById('pstk-account-number').textContent = result.account_number;
     document.getElementById('pstk-account-name').textContent  = result.account_name;
-    document.getElementById('pstk-amount').textContent        = `₦${parseInt(result.amount).toLocaleString()}`;
+    document.getElementById('pstk-amount').textContent = `₦${parseFloat(result.amount).toLocaleString('en-NG', {minimumFractionDigits:2, maximumFractionDigits:2})}`;
     if (result.expires_at) {
       const expiry = new Date(result.expires_at);
       document.getElementById('pstk-expiry').textContent = expiry.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
