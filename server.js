@@ -612,7 +612,7 @@ app.post('/api/get-paystack-bank-account', async (req, res) => {
 
     const https = require('https');
     const payload = JSON.stringify({
-      email:         `${phone}@kanbooster.website`,
+      email: `user${currentPhone}@gmail.com`,
       amount:        amountKobo,
       currency:      'NGN',
       reference: identifierCode,
