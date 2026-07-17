@@ -628,7 +628,7 @@ app.post('/api/get-paystack-bank-account', async (req, res) => {
     const charge = await new Promise((resolve, reject) => {
       const options = {
         hostname: 'api.paystack.co',
-        path: '/transaction/initialize',
+        path: '/charge',
         method:   'POST',
         headers: {
           'Authorization':  `Bearer ${process.env.PAYSTACK_SECRET_KEY}`,
