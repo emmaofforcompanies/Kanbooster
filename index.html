@@ -365,7 +365,7 @@
               </div>
             </div>
             <div class="alert alert-info" style="font-size:0.8rem; margin-bottom:12px;">
-              ⚠️ Transfer the <strong>exact amount</strong>. Account expires in 30 mins. Click "I've Paid — Check Now" to get voucher.
+              ⚠️ Transfer the <strong>exact amount</strong> shown. Click "I've Paid — Check Now" to get voucher.
             </div>
             <button class="btn btn-success" onclick="checkPayment()" id="btn-check-payment">✅ I've Paid — Check Now</button>
           </div>
@@ -406,7 +406,7 @@
               </div>
             </div>
             <div class="alert alert-info" style="font-size:0.8rem; margin-bottom:12px;">
-              ⚠️ Transfer the <strong>exact amount</strong> shown. Includes 1.5% Paystack fee. Voucher appears automatically.
+              ⚠️ Transfer the <strong>exact amount</strong> shown. Click "I've Paid — Check Now" to get voucher
             </div>
             <button class="btn btn-success" onclick="checkPayment()" id="btn-check-payment-pstk">✅ I've Paid — Check Now</button>
           </div>
@@ -874,9 +874,11 @@ function copyAccountNumber(elementId) {
 // CHECK PAYMENT (manual)
 // ============================================
 async function checkPayment() {
-  const btn = document.getElementById('btn-check-payment');
-  btn.disabled = true;
-  btn.textContent = '⏳ Checking...';
+  const btnFlw  = document.getElementById('btn-check-payment');
+  const btnPstk = document.getElementById('btn-check-payment-pstk');
+  const btn = activePaymentTab === 'pstk' ? btnPstk : btnFlw;
+  if (btnFlw)  { btnFlw.disabled  = true; btnFlw.textContent  = '⏳ Checking...'; }
+  if (btnPstk) { btnPstk.disabled = true; btnPstk.textContent = '⏳ Checking...'; }
 
   try {
     const result = await apiGet(`/api/transaction-status?code=${encodeURIComponent(identifierCode)}`);
@@ -904,33 +906,36 @@ async function checkPayment() {
     }
 
     if (result.status === 'underpaid') {
-      btn.disabled = false;
-      btn.textContent = '✅ I\'ve Paid — Check Now';
+      if (btnFlw)  { btnFlw.disabled  = false; btnFlw.textContent  = '✅ I\'ve Paid — Check Now'; }
+    if (btnPstk) { btnPstk.disabled = false; btnPstk.textContent = '✅ I\'ve Paid — Check Now'; }
       alert(`⚠️ Underpayment detected. Contact support: ${settings.support_phone || ''}`);
       return;
     }
 
     if (result.status === 'overpaid') {
-      btn.disabled = false;
-      btn.textContent = '✅ I\'ve Paid — Check Now';
+      if (btnFlw)  { btnFlw.disabled  = false; btnFlw.textContent  = '✅ I\'ve Paid — Check Now'; }
+    if (btnPstk) { btnPstk.disabled = false; btnPstk.textContent = '✅ I\'ve Paid — Check Now'; }
       alert(`⚠️ Overpayment detected. Contact support: ${settings.support_phone || ''}`);
       return;
     }
 
     if (result.status === 'out_of_stock') {
-      btn.disabled = false;
-      btn.textContent = '🔄 Try Again';
+      if (btnFlw)  { btnFlw.disabled  = false; btnFlw.textContent  = '🔄 Try Again'; }
+    if (btnPstk) { btnPstk.disabled = false; btnPstk.textContent = '🔄 Try Again'; }
       alert(`⚠️ Out of stock. Contact support: ${settings.support_phone || ''}`);
       return;
     }
 
-    btn.disabled = false;
-    btn.textContent = '⏳ Not Confirmed Yet — Try Again in 1 min';
-    setTimeout(() => { btn.textContent = '✅ I\'ve Paid — Check Now'; }, 5000);
+    if (btnFlw)  { btnFlw.disabled  = false; btnFlw.textContent  = '⏳ Not yet — Try Again'; }
+    if (btnPstk) { btnPstk.disabled = false; btnPstk.textContent = '⏳ Not yet — Try Again'; }
+    setTimeout(() => {
+      if (btnFlw)  btnFlw.textContent  = '✅ I\'ve Paid — Check Now';
+      if (btnPstk) btnPstk.textContent = '✅ I\'ve Paid — Check Now';
+    }, 5000);
 
   } catch(e) {
-    btn.disabled = false;
-    btn.textContent = '✅ I\'ve Paid — Check Now';
+    if (btnFlw)  { btnFlw.disabled  = false; btnFlw.textContent  = '✅ I\'ve Paid — Check Now'; }
+    if (btnPstk) { btnPstk.disabled = false; btnPstk.textContent = '✅ I\'ve Paid — Check Now'; }
     console.error('checkPayment error:', e);
   }
 }
