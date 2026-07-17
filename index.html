@@ -812,7 +812,7 @@ async function loadBankAccount(bankAccountPromise) {
     document.getElementById('bank-name').textContent           = result.bank_name;
     document.getElementById('bank-account-number').textContent = result.account_number;
     document.getElementById('bank-account-name').textContent   = result.account_name;
-    document.getElementById('bank-amount').textContent         = `₦${parseInt(result.amount).toLocaleString()}`;
+    document.getElementById('pstk-amount').textContent = `₦${parseFloat(result.amount).toLocaleString('en-NG', {minimumFractionDigits:2, maximumFractionDigits:2})}`;
 
     if (result.expires_at) {
       const expiry = new Date(result.expires_at);
