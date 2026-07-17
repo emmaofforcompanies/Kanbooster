@@ -320,10 +320,26 @@
       <!-- Bank account card -->
       <div class="card" id="payment-summary-card">
         <div class="card-title">🏦 Bank Transfer Details</div>
-        <div id="bank-loading" style="text-align:center; padding:20px 0; color:var(--text2); font-size:0.85rem;">
-          <span class="flicker">Generating your payment account...</span>
+
+        <!-- Provider Tabs -->
+        <div style="display:flex; gap:8px; margin-bottom:16px;">
+          <button id="tab-flw" onclick="switchPaymentTab('flw')"
+            style="flex:1; padding:10px; border-radius:10px; border:2px solid var(--accent); background:var(--accent); color:#fff; font-weight:700; cursor:pointer; font-size:0.85rem;">
+            Option 1 · Flutterwave
+          </button>
+          <button id="tab-pstk" onclick="switchPaymentTab('pstk')"
+            style="flex:1; padding:10px; border-radius:10px; border:2px solid var(--border); background:var(--surface2); color:var(--text2); font-weight:600; cursor:pointer; font-size:0.85rem;">
+            Option 2 · Paystack
+          </button>
         </div>
-        <div id="bank-details" style="display:none;">
+
+        <!-- Shared Loading -->
+        <div id="bank-loading" style="text-align:center; padding:20px 0; color:var(--text2); font-size:0.85rem;">
+          <span class="flicker">Generating your payment accounts...</span>
+        </div>
+
+        <!-- Flutterwave Details -->
+        <div id="bank-details-flw" style="display:none;">
           <div style="background:var(--surface2); border:1px solid var(--border); border-radius:12px; padding:16px; margin-bottom:14px;">
             <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
               <span style="font-size:0.75rem; color:var(--text2); letter-spacing:1px; text-transform:uppercase;">Bank</span>
@@ -333,7 +349,7 @@
               <span style="font-size:0.75rem; color:var(--text2); letter-spacing:1px; text-transform:uppercase;">Account Number</span>
               <div style="display:flex; align-items:center; gap:8px;">
                 <span id="bank-account-number" style="font-family:'JetBrains Mono',monospace; font-size:1.2rem; color:var(--accent); font-weight:700; letter-spacing:2px;"></span>
-                <button onclick="copyAccountNumber()" style="background:var(--border); border:none; border-radius:6px; color:var(--text); padding:4px 8px; cursor:pointer; font-size:0.75rem;">Copy</button>
+                <button onclick="copyAccountNumber('bank-account-number')" style="background:var(--border); border:none; border-radius:6px; color:var(--text); padding:4px 8px; cursor:pointer; font-size:0.75rem;">Copy</button>
               </div>
             </div>
             <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
@@ -349,8 +365,41 @@
               <span id="bank-expiry" style="color:var(--warning); font-size:0.85rem;"></span>
             </div>
           </div>
+        </div>
+
+        <!-- Paystack Details -->
+        <div id="bank-details-pstk" style="display:none;">
+          <div style="background:var(--surface2); border:1px solid var(--border); border-radius:12px; padding:16px; margin-bottom:14px;">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
+              <span style="font-size:0.75rem; color:var(--text2); letter-spacing:1px; text-transform:uppercase;">Bank</span>
+              <span id="pstk-bank-name" style="font-weight:600; color:var(--text);"></span>
+            </div>
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
+              <span style="font-size:0.75rem; color:var(--text2); letter-spacing:1px; text-transform:uppercase;">Account Number</span>
+              <div style="display:flex; align-items:center; gap:8px;">
+                <span id="pstk-account-number" style="font-family:'JetBrains Mono',monospace; font-size:1.2rem; color:var(--accent); font-weight:700; letter-spacing:2px;"></span>
+                <button onclick="copyAccountNumber('pstk-account-number')" style="background:var(--border); border:none; border-radius:6px; color:var(--text); padding:4px 8px; cursor:pointer; font-size:0.75rem;">Copy</button>
+              </div>
+            </div>
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
+              <span style="font-size:0.75rem; color:var(--text2); letter-spacing:1px; text-transform:uppercase;">Account Name</span>
+              <span id="pstk-account-name" style="color:var(--text); font-size:0.85rem;"></span>
+            </div>
+            <div style="display:flex; justify-content:space-between; align-items:center;">
+              <span style="font-size:0.75rem; color:var(--text2); letter-spacing:1px; text-transform:uppercase;">Amount</span>
+              <span id="pstk-amount" style="color:var(--success); font-weight:700; font-size:1rem;"></span>
+            </div>
+          </div>
+          <div id="pstk-loading-msg" style="text-align:center; padding:8px 0; color:var(--text2); font-size:0.82rem; display:none;">
+            <span class="flicker">Loading Paystack account...</span>
+          </div>
+          <div id="pstk-error-msg" style="display:none;" class="alert alert-danger"></div>
+        </div>
+
+        <!-- Shared bottom section -->
+        <div id="bank-details" style="display:none;">
           <div class="alert alert-info" style="margin-bottom:14px; font-size:0.82rem;">
-            ⚠️ Transfer the <strong>exact amount</strong> shown. Account expires in 30 minutes. Your voucher will appear automatically after transfer.
+            ⚠️ Transfer the <strong>exact amount</strong> shown. Your voucher will appear automatically after transfer.
           </div>
           <button class="btn btn-success" onclick="checkPayment()" id="btn-check-payment">
             ✅ I've Paid — Check Now
@@ -360,6 +409,7 @@
             Need help? Call <strong id="support-phone-display"></strong>
           </div>
         </div>
+
         <div id="bank-error" style="display:none;">
           <div class="alert alert-danger" id="bank-error-msg"></div>
           <button class="btn btn-secondary" onclick="goToPage2()">← Back</button>
@@ -706,19 +756,51 @@ async function proceedToPayment() {
 // ============================================
 // OPEN FLUTTERWAVE
 // ============================================
+let activePaymentTab = 'flw';
+
+function switchPaymentTab(tab) {
+  activePaymentTab = tab;
+  const flwBtn  = document.getElementById('tab-flw');
+  const pstkBtn = document.getElementById('tab-pstk');
+  const flwDiv  = document.getElementById('bank-details-flw');
+  const pstkDiv = document.getElementById('bank-details-pstk');
+
+  if (tab === 'flw') {
+    flwBtn.style.background  = 'var(--accent)';
+    flwBtn.style.color       = '#fff';
+    flwBtn.style.borderColor = 'var(--accent)';
+    pstkBtn.style.background  = 'var(--surface2)';
+    pstkBtn.style.color       = 'var(--text2)';
+    pstkBtn.style.borderColor = 'var(--border)';
+    flwDiv.style.display  = 'block';
+    pstkDiv.style.display = 'none';
+  } else {
+    pstkBtn.style.background  = 'var(--accent)';
+    pstkBtn.style.color       = '#fff';
+    pstkBtn.style.borderColor = 'var(--accent)';
+    flwBtn.style.background  = 'var(--surface2)';
+    flwBtn.style.color       = 'var(--text2)';
+    flwBtn.style.borderColor = 'var(--border)';
+    pstkDiv.style.display = 'block';
+    flwDiv.style.display  = 'none';
+  }
+}
+
 async function loadBankAccount(bankAccountPromise) {
   document.getElementById('bank-loading').style.display = 'block';
   document.getElementById('bank-details').style.display = 'none';
+  document.getElementById('bank-details-flw').style.display = 'none';
+  document.getElementById('bank-details-pstk').style.display = 'none';
   document.getElementById('bank-error').style.display = 'none';
 
- try {
+  try {
+    // Load Flutterwave account first
     const result = await bankAccountPromise;
     document.getElementById('bank-name').textContent = result.bank_name;
     document.getElementById('bank-account-number').textContent = result.account_number;
     document.getElementById('bank-account-name').textContent = result.account_name;
     document.getElementById('bank-amount').textContent = `₦${parseInt(result.amount).toLocaleString()}`;
 
-    // Format expiry
     if (result.expires_at) {
       const expiry = new Date(result.expires_at);
       document.getElementById('bank-expiry').textContent = expiry.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
@@ -727,7 +809,25 @@ async function loadBankAccount(bankAccountPromise) {
     }
 
     document.getElementById('bank-loading').style.display = 'none';
+    document.getElementById('bank-details-flw').style.display = 'block';
     document.getElementById('bank-details').style.display = 'block';
+
+    // Load Paystack account in background
+    document.getElementById('pstk-loading-msg').style.display = 'block';
+    try {
+      const pstk = await apiPost('/api/get-paystack-bank-account', {
+        identifier_code: identifierCode, phone: currentPhone, amount: selectedProduct.price,
+      });
+      document.getElementById('pstk-bank-name').textContent    = pstk.bank_name;
+      document.getElementById('pstk-account-number').textContent = pstk.account_number;
+      document.getElementById('pstk-account-name').textContent  = pstk.account_name;
+      document.getElementById('pstk-amount').textContent        = `₦${parseInt(pstk.amount).toLocaleString()}`;
+      document.getElementById('pstk-loading-msg').style.display = 'none';
+    } catch(pe) {
+      document.getElementById('pstk-loading-msg').style.display = 'none';
+      document.getElementById('pstk-error-msg').textContent = 'Paystack account unavailable. Use Flutterwave.';
+      document.getElementById('pstk-error-msg').style.display = 'block';
+    }
 
   } catch(e) {
     document.getElementById('bank-loading').style.display = 'none';
@@ -736,8 +836,8 @@ async function loadBankAccount(bankAccountPromise) {
   }
 }
 
-function copyAccountNumber() {
-  const num = document.getElementById('bank-account-number').textContent;
+function copyAccountNumber(elementId) {
+  const num = document.getElementById(elementId || 'bank-account-number').textContent;
   navigator.clipboard.writeText(num).then(() => {
     alert('Account number copied!');
   });
