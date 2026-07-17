@@ -584,7 +584,7 @@ res.json({
   bank_name: meta?.transfer_bank || '',
   account_number: meta?.transfer_account || '',
   account_name: meta?.transfer_note || 'KanBooster Payment',
-  amount: meta?.transfer_amount || amount,
+  amount: parseFloat(meta?.transfer_amount || amount).toFixed(2),
   note: meta?.transfer_note || '',
   expires_at: meta?.account_expiration || '',
 });
@@ -656,7 +656,7 @@ const amountKobo   = totalAmount * 100;
   bank_name:      acct.bank?.name || acct.bank || 'Paystack Transfer',
   account_number: acct.account_number || '',
   account_name:   acct.account_name || 'Afri EO Ltd',
-  amount: charge.data?.amount ? charge.data.amount / 100 : totalAmount,
+  amount: charge.data?.amount ? (charge.data.amount / 100).toFixed(2) : totalAmount.toFixed(2),
   expires_at:     acct.account_expires_at || '',
 });
 
