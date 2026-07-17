@@ -766,7 +766,7 @@ app.post('/api/paystack-webhook', async (req, res) => {
 
     if (txn.status === 'completed' && txn.voucher_code) return;
 
-    const expectedAmount = parseFloat(txn.amount);
+    const expectedAmount = parseFloat(event.data?.requested_amount) / 100;
 
     if (paidAmount < expectedAmount) {
       await supabase.from('web_transactions').update({ status: 'underpaid', flw_ref: pstkRef })
@@ -878,7 +878,7 @@ app.post('/api/verify-paystack', purchaseLimiter, async (req, res) => {
     }
 
     const verifiedAmount = parseFloat(verifyResponse.data.amount) / 100;
-    const expectedAmount = parseFloat(txn.amount);
+    const expectedAmount = parseFloat(event.data?.requested_amount) / 100;
 
     if (verifiedAmount < expectedAmount) {
       await supabase.from('web_transactions').update({ status: 'underpaid', flw_ref: pstkRef }).eq('payment_code', identifierCode);
@@ -933,7 +933,7 @@ app.post('/api/verify-paystack', purchaseLimiter, async (req, res) => {
 
     // Amount check (if verified)
     if (verifiedAmount !== null) {
-      const expectedAmount = parseFloat(txn.amount);
+      const expectedAmount = parseFloat(event.data?.requested_amount) / 100;
       if (verifiedAmount < expectedAmount) {
         await supabase.from('web_transactions').update({ status: 'underpaid', flw_ref: flwRef })
           .eq('payment_code', identifierCode);
