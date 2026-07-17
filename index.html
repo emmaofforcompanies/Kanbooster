@@ -317,102 +317,76 @@
     <!-- Page 3: Bank Transfer -->
     <div id="page-3" class="page">
 
-      <!-- Bank account card -->
+      <!-- Payment Options Card -->
       <div class="card" id="payment-summary-card">
-        <div class="card-title">🏦 Bank Transfer Details</div>
+        <div class="card-title">💳 Choose Payment Method</div>
 
-        <!-- Provider Tabs -->
-        <div style="display:flex; gap:8px; margin-bottom:16px;">
-          <button id="tab-flw" onclick="switchPaymentTab('flw')"
-            style="flex:1; padding:10px; border-radius:10px; border:2px solid var(--accent); background:var(--accent); color:#fff; font-weight:700; cursor:pointer; font-size:0.85rem;">
-            Option 1 · Flutterwave
-          </button>
-          <button id="tab-pstk" onclick="switchPaymentTab('pstk')"
-            style="flex:1; padding:10px; border-radius:10px; border:2px solid var(--border); background:var(--surface2); color:var(--text2); font-weight:600; cursor:pointer; font-size:0.85rem;">
-            Option 2 · Paystack
-          </button>
+        <!-- Summary row -->
+        <div style="background:var(--surface2); border:1px solid var(--border); border-radius:12px; padding:14px; margin-bottom:16px; display:flex; justify-content:space-between; align-items:center;">
+          <span style="font-size:0.85rem; color:var(--text2);">Amount to pay</span>
+          <span id="pay-amount-display" style="font-weight:700; font-size:1.1rem; color:var(--success);"></span>
         </div>
 
-        <!-- Shared Loading -->
-        <div id="bank-loading" style="text-align:center; padding:20px 0; color:var(--text2); font-size:0.85rem;">
-          <span class="flicker">Generating your payment accounts...</span>
-        </div>
-
-        <!-- Flutterwave Details -->
-        <div id="bank-details-flw" style="display:none;">
-          <div style="background:var(--surface2); border:1px solid var(--border); border-radius:12px; padding:16px; margin-bottom:14px;">
-            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
-              <span style="font-size:0.75rem; color:var(--text2); letter-spacing:1px; text-transform:uppercase;">Bank</span>
-              <span id="bank-name" style="font-weight:600; color:var(--text);"></span>
-            </div>
-            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
-              <span style="font-size:0.75rem; color:var(--text2); letter-spacing:1px; text-transform:uppercase;">Account Number</span>
-              <div style="display:flex; align-items:center; gap:8px;">
-                <span id="bank-account-number" style="font-family:'JetBrains Mono',monospace; font-size:1.2rem; color:var(--accent); font-weight:700; letter-spacing:2px;"></span>
-                <button onclick="copyAccountNumber('bank-account-number')" style="background:var(--border); border:none; border-radius:6px; color:var(--text); padding:4px 8px; cursor:pointer; font-size:0.75rem;">Copy</button>
+        <!-- Option 1: Flutterwave -->
+        <div style="margin-bottom:12px;">
+          <div style="font-size:0.72rem; color:var(--text2); letter-spacing:1px; text-transform:uppercase; margin-bottom:6px;">Option 1 — Bank Transfer</div>
+          <div id="bank-loading" style="text-align:center; padding:14px 0; color:var(--text2); font-size:0.85rem;">
+            <span class="flicker">Generating account...</span>
+          </div>
+          <div id="bank-details" style="display:none;">
+            <div style="background:var(--surface2); border:1px solid var(--border); border-radius:12px; padding:14px; margin-bottom:10px;">
+              <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
+                <span style="font-size:0.75rem; color:var(--text2); text-transform:uppercase;">Bank</span>
+                <span id="bank-name" style="font-weight:600; color:var(--text);"></span>
+              </div>
+              <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
+                <span style="font-size:0.75rem; color:var(--text2); text-transform:uppercase;">Account No.</span>
+                <div style="display:flex; align-items:center; gap:8px;">
+                  <span id="bank-account-number" style="font-family:'JetBrains Mono',monospace; font-size:1.1rem; color:var(--accent); font-weight:700; letter-spacing:2px;"></span>
+                  <button onclick="copyAccountNumber()" style="background:var(--border); border:none; border-radius:6px; color:var(--text); padding:4px 8px; cursor:pointer; font-size:0.75rem;">Copy</button>
+                </div>
+              </div>
+              <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
+                <span style="font-size:0.75rem; color:var(--text2); text-transform:uppercase;">Account Name</span>
+                <span id="bank-account-name" style="color:var(--text); font-size:0.85rem;"></span>
+              </div>
+              <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
+                <span style="font-size:0.75rem; color:var(--text2); text-transform:uppercase;">Amount</span>
+                <span id="bank-amount" style="color:var(--success); font-weight:700;"></span>
+              </div>
+              <div style="display:flex; justify-content:space-between; align-items:center;">
+                <span style="font-size:0.75rem; color:var(--text2); text-transform:uppercase;">Expires</span>
+                <span id="bank-expiry" style="color:var(--warning); font-size:0.85rem;"></span>
               </div>
             </div>
-            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
-              <span style="font-size:0.75rem; color:var(--text2); letter-spacing:1px; text-transform:uppercase;">Account Name</span>
-              <span id="bank-account-name" style="color:var(--text); font-size:0.85rem;"></span>
+            <div class="alert alert-info" style="font-size:0.8rem; margin-bottom:10px;">
+              ⚠️ Transfer the <strong>exact amount</strong>. Account expires in 30 mins. Voucher appears automatically.
             </div>
-            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
-              <span style="font-size:0.75rem; color:var(--text2); letter-spacing:1px; text-transform:uppercase;">Amount</span>
-              <span id="bank-amount" style="color:var(--success); font-weight:700; font-size:1rem;"></span>
-            </div>
-            <div style="display:flex; justify-content:space-between; align-items:center;">
-              <span style="font-size:0.75rem; color:var(--text2); letter-spacing:1px; text-transform:uppercase;">Expires</span>
-              <span id="bank-expiry" style="color:var(--warning); font-size:0.85rem;"></span>
-            </div>
+            <button class="btn btn-success" onclick="checkPayment()" id="btn-check-payment">✅ I've Paid — Check Now</button>
+          </div>
+          <div id="bank-error" style="display:none;">
+            <div class="alert alert-danger" id="bank-error-msg"></div>
           </div>
         </div>
 
-        <!-- Paystack Details -->
-        <div id="bank-details-pstk" style="display:none;">
-          <div style="background:var(--surface2); border:1px solid var(--border); border-radius:12px; padding:16px; margin-bottom:14px;">
-            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
-              <span style="font-size:0.75rem; color:var(--text2); letter-spacing:1px; text-transform:uppercase;">Bank</span>
-              <span id="pstk-bank-name" style="font-weight:600; color:var(--text);"></span>
-            </div>
-            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
-              <span style="font-size:0.75rem; color:var(--text2); letter-spacing:1px; text-transform:uppercase;">Account Number</span>
-              <div style="display:flex; align-items:center; gap:8px;">
-                <span id="pstk-account-number" style="font-family:'JetBrains Mono',monospace; font-size:1.2rem; color:var(--accent); font-weight:700; letter-spacing:2px;"></span>
-                <button onclick="copyAccountNumber('pstk-account-number')" style="background:var(--border); border:none; border-radius:6px; color:var(--text); padding:4px 8px; cursor:pointer; font-size:0.75rem;">Copy</button>
-              </div>
-            </div>
-            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
-              <span style="font-size:0.75rem; color:var(--text2); letter-spacing:1px; text-transform:uppercase;">Account Name</span>
-              <span id="pstk-account-name" style="color:var(--text); font-size:0.85rem;"></span>
-            </div>
-            <div style="display:flex; justify-content:space-between; align-items:center;">
-              <span style="font-size:0.75rem; color:var(--text2); letter-spacing:1px; text-transform:uppercase;">Amount</span>
-              <span id="pstk-amount" style="color:var(--success); font-weight:700; font-size:1rem;"></span>
-            </div>
-          </div>
-          <div id="pstk-loading-msg" style="text-align:center; padding:8px 0; color:var(--text2); font-size:0.82rem; display:none;">
-            <span class="flicker">Loading Paystack account...</span>
-          </div>
-          <div id="pstk-error-msg" style="display:none;" class="alert alert-danger"></div>
+        <!-- Divider -->
+        <div style="display:flex; align-items:center; gap:10px; margin:16px 0;">
+          <div style="flex:1; height:1px; background:var(--border);"></div>
+          <span style="font-size:0.75rem; color:var(--text2); text-transform:uppercase; letter-spacing:1px;">or</span>
+          <div style="flex:1; height:1px; background:var(--border);"></div>
         </div>
 
-        <!-- Shared bottom section -->
-        <div id="bank-details" style="display:none;">
-          <div class="alert alert-info" style="margin-bottom:14px; font-size:0.82rem;">
-            ⚠️ Transfer the <strong>exact amount</strong> shown. Your voucher will appear automatically after transfer.
-          </div>
-          <button class="btn btn-success" onclick="checkPayment()" id="btn-check-payment">
-            ✅ I've Paid — Check Now
+        <!-- Option 2: Paystack Card -->
+        <div style="margin-bottom:16px;">
+          <div style="font-size:0.72rem; color:var(--text2); letter-spacing:1px; text-transform:uppercase; margin-bottom:6px;">Option 2 — Card / USSD / More</div>
+          <button class="btn btn-primary" id="btn-pay-paystack" onclick="openPaystack()" style="width:100%; background:var(--surface2); border:2px solid var(--border); color:var(--text);">
+            💳 Pay with Paystack
           </button>
-          <button class="btn btn-secondary" onclick="goToPage2()" style="margin-top:8px;">← Back</button>
-          <div style="margin-top:12px; font-size:0.78rem; color:var(--text2); text-align:center;">
-            Need help? Call <strong id="support-phone-display"></strong>
-          </div>
         </div>
 
-        <div id="bank-error" style="display:none;">
-          <div class="alert alert-danger" id="bank-error-msg"></div>
-          <button class="btn btn-secondary" onclick="goToPage2()">← Back</button>
+        <button class="btn btn-secondary" onclick="goToPage2()" style="margin-top:4px;">← Back</button>
+        <div style="margin-top:12px; font-size:0.78rem; color:var(--text2); text-align:center;">
+          Need help? Call <strong id="support-phone-display"></strong>
         </div>
       </div>
 
@@ -741,6 +715,7 @@ async function proceedToPayment() {
   });
   selectedProduct.price = result.amount;
   selectedProduct.name = result.product_name;
+  pstkPublicKey = result.pstk_public_key || '';
   localStorage.setItem('kb_last_identifier', identifierCode);
   localStorage.setItem('kb_last_phone', currentPhone);
 
@@ -786,15 +761,15 @@ function switchPaymentTab(tab) {
   }
 }
 
+let pstkPublicKey = '';
+
 async function loadBankAccount(bankAccountPromise) {
   document.getElementById('bank-loading').style.display = 'block';
   document.getElementById('bank-details').style.display = 'none';
-  document.getElementById('bank-details-flw').style.display = 'none';
-  document.getElementById('bank-details-pstk').style.display = 'none';
   document.getElementById('bank-error').style.display = 'none';
+  document.getElementById('pay-amount-display').textContent = `₦${parseInt(selectedProduct.price).toLocaleString()}`;
 
   try {
-    // Load Flutterwave account first
     const result = await bankAccountPromise;
     document.getElementById('bank-name').textContent = result.bank_name;
     document.getElementById('bank-account-number').textContent = result.account_number;
@@ -809,31 +784,57 @@ async function loadBankAccount(bankAccountPromise) {
     }
 
     document.getElementById('bank-loading').style.display = 'none';
-    document.getElementById('bank-details-flw').style.display = 'block';
     document.getElementById('bank-details').style.display = 'block';
-
-    // Load Paystack account in background
-    document.getElementById('pstk-loading-msg').style.display = 'block';
-    try {
-      const pstk = await apiPost('/api/get-paystack-bank-account', {
-        identifier_code: identifierCode, phone: currentPhone, amount: selectedProduct.price,
-      });
-      document.getElementById('pstk-bank-name').textContent    = pstk.bank_name;
-      document.getElementById('pstk-account-number').textContent = pstk.account_number;
-      document.getElementById('pstk-account-name').textContent  = pstk.account_name;
-      document.getElementById('pstk-amount').textContent        = `₦${parseInt(pstk.amount).toLocaleString()}`;
-      document.getElementById('pstk-loading-msg').style.display = 'none';
-    } catch(pe) {
-      document.getElementById('pstk-loading-msg').style.display = 'none';
-      document.getElementById('pstk-error-msg').textContent = 'Paystack account unavailable. Use Flutterwave.';
-      document.getElementById('pstk-error-msg').style.display = 'block';
-    }
 
   } catch(e) {
     document.getElementById('bank-loading').style.display = 'none';
     document.getElementById('bank-error-msg').textContent = e.message || 'Could not generate payment account. Please try again.';
     document.getElementById('bank-error').style.display = 'block';
   }
+}
+
+function openPaystack() {
+  const btn = document.getElementById('btn-pay-paystack');
+  btn.disabled = true;
+  btn.textContent = '⏳ Opening...';
+
+  const handler = PaystackPop.setup({
+    key: pstkPublicKey,
+    email: `${currentPhone}@kanbooster.website`,
+    amount: selectedProduct.price * 100, // Paystack uses kobo
+    currency: 'NGN',
+    ref: identifierCode,
+    metadata: { phone: currentPhone, site: currentSite },
+    onSuccess: async function(transaction) {
+      btn.disabled = false;
+      btn.textContent = '💳 Pay with Paystack';
+      showPage('page-3');
+      document.getElementById('payment-summary-card').style.display = 'none';
+      document.getElementById('waiting-card').style.display = 'block';
+      startPolling();
+
+      // Also verify server-side immediately
+      try {
+        const verify = await apiPost('/api/verify-paystack', {
+          identifier_code: identifierCode,
+          pstk_ref: String(transaction.reference),
+        });
+        if (verify.success && verify.voucher) {
+          stopPolling();
+          saveVoucherLocally(verify.voucher);
+          showVoucher(verify.voucher, selectedProduct.name);
+        }
+      } catch(e) {
+        console.error('Paystack verify error:', e);
+        // polling will catch it
+      }
+    },
+    onCancel: function() {
+      btn.disabled = false;
+      btn.textContent = '💳 Pay with Paystack';
+    },
+  });
+  handler.openIframe();
 }
 
 function copyAccountNumber(elementId) {
