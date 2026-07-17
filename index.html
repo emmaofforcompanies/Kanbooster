@@ -1,0 +1,1258 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>KanBooster — WiFi Vouchers</title>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0a0e1a;
+    --surface: #111827;
+    --surface2: #1a2236;
+    --border: #1f2d45;
+    --accent: #00d4ff;
+    --accent2: #7c3aed;
+    --success: #10b981;
+    --warning: #f59e0b;
+    --danger: #ef4444;
+    --text: #f0f4ff;
+    --text2: #8899bb;
+    --glow: 0 0 30px rgba(0,212,255,0.15);
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: 'DM Sans', sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; overflow-x: hidden; }
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background:
+      radial-gradient(ellipse 80% 50% at 20% 0%, rgba(0,212,255,0.07) 0%, transparent 60%),
+      radial-gradient(ellipse 60% 40% at 80% 100%, rgba(124,58,237,0.07) 0%, transparent 60%);
+    pointer-events: none;
+    z-index: 0;
+  }
+  .container { max-width: 520px; margin: 0 auto; padding: 24px 16px 60px; position: relative; z-index: 1; }
+  .header { text-align: center; padding: 32px 0 28px; }
+  .logo {
+    font-family: 'Syne', sans-serif; font-weight: 800; font-size: 2rem; letter-spacing: -0.5px;
+    background: linear-gradient(135deg, var(--accent), var(--accent2));
+    -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
+  }
+  .logo-sub { font-size: 0.8rem; color: var(--text2); letter-spacing: 3px; text-transform: uppercase; margin-top: 4px; }
+  .signal-bars { display: flex; justify-content: center; gap: 4px; margin: 12px 0; align-items: flex-end; height: 20px; }
+  .signal-bars span { width: 5px; background: var(--accent); border-radius: 2px; opacity: 0.3; animation: pulse-bar 1.5s ease-in-out infinite; }
+  .signal-bars span:nth-child(1) { height: 6px; animation-delay: 0s; }
+  .signal-bars span:nth-child(2) { height: 10px; animation-delay: 0.15s; }
+  .signal-bars span:nth-child(3) { height: 14px; animation-delay: 0.3s; }
+  .signal-bars span:nth-child(4) { height: 18px; animation-delay: 0.45s; }
+  .signal-bars span:nth-child(5) { height: 20px; animation-delay: 0.6s; }
+  @keyframes pulse-bar { 0%, 100% { opacity: 0.3; } 50% { opacity: 1; } }
+  .card { background: var(--surface); border: 1px solid var(--border); border-radius: 16px; padding: 24px; margin-bottom: 16px; box-shadow: var(--glow); }
+  .card-title { font-family: 'Syne', sans-serif; font-weight: 700; font-size: 0.75rem; letter-spacing: 2px; text-transform: uppercase; color: var(--accent); margin-bottom: 16px; }
+  .steps { display: flex; justify-content: center; gap: 8px; margin-bottom: 24px; }
+  .step { width: 32px; height: 4px; border-radius: 2px; background: var(--border); transition: background 0.3s; }
+  .step.active { background: var(--accent); }
+  .step.done { background: var(--success); }
+  label { display: block; font-size: 0.78rem; color: var(--text2); margin-bottom: 6px; letter-spacing: 0.5px; }
+  input, select {
+    width: 100%; background: var(--surface2); border: 1px solid var(--border); border-radius: 10px;
+    padding: 12px 14px; color: var(--text); font-family: 'DM Sans', sans-serif; font-size: 0.95rem;
+    outline: none; transition: border-color 0.2s, box-shadow 0.2s; margin-bottom: 14px; appearance: none;
+  }
+  input:focus, select:focus { border-color: var(--accent); box-shadow: 0 0 0 3px rgba(0,212,255,0.1); }
+  .products-grid { display: flex; flex-direction: column; gap: 10px; margin-bottom: 14px; }
+  .product-card {
+    background: var(--surface2); border: 2px solid var(--border); border-radius: 12px;
+    padding: 14px 16px; cursor: pointer; transition: all 0.2s;
+    display: flex; justify-content: space-between; align-items: center;
+  }
+  .product-card:hover { border-color: var(--accent); background: rgba(0,212,255,0.05); }
+  .product-card.selected { border-color: var(--accent); background: rgba(0,212,255,0.08); box-shadow: 0 0 20px rgba(0,212,255,0.1); }
+  .product-name { font-family: 'Syne', sans-serif; font-weight: 600; font-size: 0.95rem; }
+  .product-price { font-family: 'Syne', sans-serif; font-weight: 700; font-size: 1.1rem; color: var(--accent); }
+  .btn { width: 100%; padding: 14px; border: none; border-radius: 12px; font-family: 'Syne', sans-serif; font-weight: 700; font-size: 0.95rem; cursor: pointer; transition: all 0.2s; letter-spacing: 0.5px; }
+  .btn-primary { background: linear-gradient(135deg, var(--accent), #0099bb); color: #000; }
+  .btn-primary:hover { transform: translateY(-1px); box-shadow: 0 8px 24px rgba(0,212,255,0.3); }
+  .btn-primary:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
+  .btn-secondary { background: transparent; border: 1px solid var(--border); color: var(--text2); margin-top: 8px; }
+  .btn-secondary:hover { border-color: var(--accent); color: var(--accent); }
+  .btn-success { background: linear-gradient(135deg, var(--success), #059669); color: #fff; }
+  .btn-ghost { background: transparent; border: 1px solid rgba(0,212,255,0.2); color: var(--accent); margin-top: 8px; font-size: 0.85rem; padding: 10px; }
+  .btn-ghost:hover { background: rgba(0,212,255,0.05); border-color: var(--accent); }
+  .voucher-display { text-align: center; padding: 8px 0; }
+  .voucher-label { font-size: 0.72rem; color: var(--text2); letter-spacing: 2px; text-transform: uppercase; margin-bottom: 12px; }
+  .voucher-code {
+    font-family: 'Syne', sans-serif; font-size: 1.8rem; font-weight: 800;
+    background: linear-gradient(135deg, var(--accent), var(--accent2));
+    -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
+    letter-spacing: 2px; word-break: break-all; margin-bottom: 12px;
+  }
+  .voucher-copy-btn {
+    background: rgba(0,212,255,0.1); border: 1px solid var(--accent); color: var(--accent);
+    border-radius: 8px; padding: 8px 20px; font-family: 'Syne', sans-serif; font-size: 0.8rem;
+    font-weight: 700; cursor: pointer; letter-spacing: 1px; transition: all 0.2s;
+  }
+  .voucher-copy-btn:hover { background: rgba(0,212,255,0.2); }
+  .alert { padding: 12px 14px; border-radius: 10px; font-size: 0.85rem; margin-bottom: 14px; line-height: 1.5; }
+  .alert-warning { background: rgba(245,158,11,0.08); border: 1px solid rgba(245,158,11,0.25); color: #fcd34d; }
+  .alert-info { background: rgba(0,212,255,0.06); border: 1px solid rgba(0,212,255,0.2); color: #67e8f9; }
+  .alert-success { background: rgba(16,185,129,0.08); border: 1px solid rgba(16,185,129,0.25); color: #6ee7b7; }
+  .tabs { display: flex; background: var(--surface2); border-radius: 12px; padding: 4px; margin-bottom: 20px; gap: 4px; }
+  .tab { flex: 1; padding: 10px; border: none; border-radius: 9px; background: transparent; color: var(--text2); font-family: 'Syne', sans-serif; font-size: 0.8rem; font-weight: 700; cursor: pointer; transition: all 0.2s; letter-spacing: 0.5px; }
+  .tab.active { background: var(--surface); color: var(--accent); box-shadow: 0 2px 8px rgba(0,0,0,0.3); }
+  .instructions { font-size: 0.82rem; color: var(--text2); line-height: 1.7; }
+  .instructions li { padding: 3px 0; padding-left: 4px; }
+  .instructions li::marker { color: var(--accent); }
+  .divider { height: 1px; background: var(--border); margin: 16px 0; }
+  .page { display: none; }
+  .page.active { display: block; }
+  .success-icon {
+    width: 60px; height: 60px; background: rgba(16,185,129,0.1); border: 2px solid var(--success);
+    border-radius: 50%; display: flex; align-items: center; justify-content: center;
+    font-size: 1.6rem; margin: 0 auto 16px;
+    animation: pop-in 0.4s cubic-bezier(0.34,1.56,0.64,1);
+  }
+  @keyframes pop-in { from { transform: scale(0); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+  #loading-overlay {
+    display: none; position: fixed; inset: 0; background: rgba(10,14,26,0.85);
+    z-index: 100; align-items: center; justify-content: center; flex-direction: column; gap: 16px;
+  }
+  #loading-overlay.show { display: flex; }
+  .loading-spinner { width: 40px; height: 40px; border: 3px solid rgba(0,212,255,0.2); border-top-color: var(--accent); border-radius: 50%; animation: spin 0.8s linear infinite; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  .loading-text { color: var(--text2); font-size: 0.85rem; }
+  .footer { text-align: center; color: var(--text2); font-size: 0.75rem; padding-top: 8px; }
+  @media (max-width: 400px) { .voucher-code { font-size: 1.4rem; } .logo { font-size: 1.7rem; } }
+  @keyframes flicker { 0%, 100% { opacity: 1; } 50% { opacity: 0.6; } }
+  .flicker { animation: flicker 2s ease-in-out infinite; }
+
+  /* Waiting card */
+  .waiting-card { text-align: center; padding: 20px 0 8px; }
+  .waiting-spinner { width: 48px; height: 48px; border: 3px solid rgba(0,212,255,0.15); border-top-color: var(--accent); border-radius: 50%; animation: spin 1s linear infinite; margin: 0 auto 16px; }
+  .waiting-title { font-family: 'Syne', sans-serif; font-weight: 700; font-size: 1rem; margin-bottom: 8px; }
+  .waiting-sub { font-size: 0.82rem; color: var(--text2); line-height: 1.6; }
+
+  /* Review stars */
+  .review-stars { color: #fbbf24; font-size: 1.3rem; letter-spacing: 2px; margin-bottom: 6px; }
+
+  /* Review link card */
+  .review-card {
+    background: linear-gradient(135deg, rgba(251,191,36,0.05), rgba(0,212,255,0.05));
+    border: 1px solid rgba(251,191,36,0.2);
+  }
+
+
+
+/* Tutorial banner (returning users) */
+.tutorial-banner {
+  background: linear-gradient(135deg, rgba(0,212,255,0.08), rgba(124,58,237,0.08));
+  border: 1px solid rgba(0,212,255,0.2);
+  border-radius: 12px;
+  padding: 12px 16px;
+  margin-bottom: 16px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  cursor: pointer;
+  transition: border-color 0.2s;
+}
+.tutorial-banner:hover { border-color: var(--accent); }
+.tutorial-banner-icon { font-size: 1.4rem; flex-shrink: 0; }
+.tutorial-banner-text { font-size: 0.82rem; color: var(--text2); line-height: 1.4; }
+.tutorial-banner-text strong { color: var(--accent); display: block; font-size: 0.88rem; margin-bottom: 2px; }
+
+/* Tutorial modal */
+#tutorial-modal {
+  display: none; position: fixed; inset: 0;
+  background: rgba(0,0,0,0.88); z-index: 9999;
+  align-items: center; justify-content: center; padding: 16px;
+}
+#tutorial-modal.show { display: flex; }
+.tutorial-modal-box {
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: 16px; width: 100%; max-width: 500px; padding: 20px;
+}
+.tutorial-modal-title {
+  font-family: 'Syne', sans-serif; font-weight: 700;
+  color: var(--accent); margin-bottom: 4px; font-size: 1rem;
+}
+.tutorial-modal-sub { font-size: 0.8rem; color: var(--text2); margin-bottom: 14px; }
+.tutorial-video-wrap {
+  width: 100%; aspect-ratio: 16/9; border-radius: 10px;
+  overflow: hidden; background: #000; margin-bottom: 16px;
+}
+.tutorial-video-wrap iframe { width: 100%; height: 100%; display: block; border: none; }
+.tutorial-close-btn {
+  width: 100%; padding: 12px; background: var(--accent);
+  border: none; border-radius: 10px; color: #000;
+  font-family: 'Syne', sans-serif; font-weight: 700;
+  font-size: 0.9rem; cursor: pointer;
+}
+
+  
+</style>
+</head>
+<body>
+
+<div id="loading-overlay">
+  <div class="loading-spinner"></div>
+  <div class="loading-text" id="loading-text">Loading...</div>
+</div>
+
+<div class="container">
+  <div class="header">
+    <div class="logo">KanBooster</div>
+    <div class="logo-sub">WiFi Voucher Store</div>
+    <div class="signal-bars">
+      <span></span><span></span><span></span><span></span><span></span>
+    </div>
+  </div>
+
+  <div class="tabs">
+    <button class="tab active" onclick="switchTab('buy')">Buy Voucher</button>
+    <button class="tab" onclick="switchTab('retrieve')">Retrieve Code</button>
+    <button class="tab" onclick="switchTab('balance')">Balance Check</button>
+  </div>
+
+  <!-- BUY FLOW -->
+  <!-- BUY FLOW -->
+  <div id="tab-buy" class="page active">
+    <div id="tutorial-banner" class="tutorial-banner" style="display:none;" onclick="openTutorial()">
+      <div class="tutorial-banner-icon">▶️</div>
+      <div class="tutorial-banner-text">
+        <strong>Watch how to buy data</strong>
+        Step-by-step video guide
+      </div>
+    </div>
+    <div class="steps">
+      <div class="step active" id="step-1"></div>
+      <div class="step" id="step-2"></div>
+      <div class="step" id="step-3"></div>
+      <div class="step" id="step-4"></div>
+    </div>
+
+    <!-- Page 1: Products -->
+    <div id="page-1" class="page active">
+<div class="card" id="wifi-tutorial-card">
+        <a id="wifi-tutorial-link" href="#" target="_blank" rel="noopener" style="display:flex; align-items:center; gap:14px; text-decoration:none;">
+          <div style="font-size:1.6rem; flex-shrink:0;">🎬</div>
+          <div>
+            <div style="font-family:'Syne',sans-serif; font-weight:700; color:var(--accent); font-size:0.92rem;">KanBooster WiFi Tutorial Videos</div>
+            <div style="font-size:0.78rem; color:var(--text2); margin-top:3px;">See Data saving guides on Kanbooster Wifi</div>
+          </div>
+          <div style="margin-left:auto; color:var(--text2); font-size:1rem;">›</div>
+        </a>
+      </div>
+      
+  <div class="card" id="site-input-card">
+  <div class="card-title">📍 Enter Your Site Name</div>
+  <label>Site Name</label>
+  <input type="text" id="site-select" placeholder="Enter your site name" autocomplete="off" autocorrect="off" autocapitalize="none" spellcheck="false">
+  <div id="site-error" style="display:none; color:var(--danger); font-size:0.8rem; margin-top:-10px; margin-bottom:10px;"></div>
+  <button class="btn btn-primary" onclick="onSiteSubmit()">Continue →</button>
+    <div style="margin-top:12px; font-size:0.78rem; color:var(--text2); text-align:center;">
+  Need help? call <strong id="support-phone-display-1"></strong>
+</div>
+</div>
+  <div id="products-section" style="display:none;">
+    <div class="card">
+      <div class="card-title">📶 Select Your Plan</div>
+      <div id="products-loading" style="text-align:center; color:var(--text2); padding:20px 0; font-size:0.85rem;">
+          <span class="flicker">Loading available plans...</span>
+        </div>
+        <div id="products-grid" class="products-grid" style="display:none;"></div>
+        <div id="no-products" style="display:none; text-align:center; color:var(--text2); padding:20px 0; font-size:0.85rem;">
+          No plans available right now. Please try again later.
+        </div>
+        <button class="btn btn-primary" id="btn-select-product" onclick="goToPage2()" disabled>Continue →</button>
+      </div>
+      <div class="card">
+        <div class="card-title">ℹ️ How It Works</div>
+        <ol class="instructions">
+          <li>Select your preferred WiFi plan</li>
+          <li>Enter your phone number and site name</li>
+          <li>Complete payment — all fields auto-filled</li>
+          <li>Your voucher code appears instantly on screen</li>
+        </ol>
+      </div>
+
+
+    
+      </div>
+  </div>
+
+    <!-- Page 2: Phone + Site -->
+    <div id="page-2" class="page">
+      <div class="card">
+        <div class="card-title">📞 Your Details</div>
+        <label>Phone Number</label>
+        <input type="tel" id="phone-input" placeholder="e.g. 08012345678" maxlength="11">
+        <button class="btn btn-primary" onclick="goToPage3()">Continue →</button>
+        <button class="btn btn-secondary" onclick="goToPage1()">← Back</button>
+        <div style="margin-top:12px; font-size:0.78rem; color:var(--text2); text-align:center;">
+  Need help? Call <strong id="support-phone-display-2"></strong>
+</div>
+      </div>
+    </div>
+
+
+
+
+
+<div id="page-2b" class="page">
+  <div class="card">
+    <div class="card-title">🏠 Lodge Name</div>
+    <label>Enter your Lodge Name</label>
+    <input type="text" id="lodge-input" placeholder="e.g. Sunset Lodge">
+    <button class="btn btn-primary" onclick="submitLodgeName()">Continue →</button>
+    <button class="btn btn-secondary" onclick="goToPage2()">← Back</button>
+  </div>
+</div>
+
+
+
+    
+    <!-- Page 3: Payment / Waiting -->
+    <!-- Page 3: Bank Transfer -->
+    <div id="page-3" class="page">
+
+      <!-- Payment Options Card -->
+      <div class="card" id="payment-summary-card">
+        <div class="card-title">🏦 Bank Transfer</div>
+
+        <!-- Payment provider tabs -->
+        <div style="display:flex; background:var(--surface2); border-radius:12px; padding:4px; margin-bottom:20px; gap:4px;">
+          <button id="tab-btn-flw" onclick="switchPaymentTab('flw')"
+            style="flex:1; padding:10px 6px; border-radius:9px; border:none; background:var(--surface); color:var(--accent); font-family:'Syne',sans-serif; font-size:0.78rem; font-weight:700; cursor:pointer; box-shadow:0 2px 8px rgba(0,0,0,0.3); transition:all 0.2s; letter-spacing:0.3px;">
+            🏦 Flutterwave
+          </button>
+          <button id="tab-btn-pstk" onclick="switchPaymentTab('pstk')"
+            style="flex:1; padding:10px 6px; border-radius:9px; border:none; background:transparent; color:var(--text2); font-family:'Syne',sans-serif; font-size:0.78rem; font-weight:700; cursor:pointer; transition:all 0.2s; letter-spacing:0.3px;">
+            💚 Paystack
+          </button>
+        </div>
+
+        <!-- Flutterwave tab content -->
+        <div id="tab-content-flw">
+          <div id="bank-loading" style="text-align:center; padding:20px 0; color:var(--text2); font-size:0.85rem;">
+            <span class="flicker">Generating account...</span>
+          </div>
+          <div id="bank-details" style="display:none;">
+            <div style="background:var(--surface2); border:1px solid var(--border); border-radius:12px; padding:14px; margin-bottom:12px;">
+              <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
+                <span style="font-size:0.75rem; color:var(--text2); text-transform:uppercase;">Bank</span>
+                <span id="bank-name" style="font-weight:600; color:var(--text);"></span>
+              </div>
+              <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
+                <span style="font-size:0.75rem; color:var(--text2); text-transform:uppercase;">Account No.</span>
+                <div style="display:flex; align-items:center; gap:8px;">
+                  <span id="bank-account-number" style="font-family:'JetBrains Mono',monospace; font-size:1.1rem; color:var(--accent); font-weight:700; letter-spacing:2px;"></span>
+                  <button onclick="copyAccountNumber('bank-account-number')" style="background:var(--border); border:none; border-radius:6px; color:var(--text); padding:4px 8px; cursor:pointer; font-size:0.75rem;">Copy</button>
+                </div>
+              </div>
+              <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
+                <span style="font-size:0.75rem; color:var(--text2); text-transform:uppercase;">Account Name</span>
+                <span id="bank-account-name" style="color:var(--text); font-size:0.85rem;"></span>
+              </div>
+              <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
+                <span style="font-size:0.75rem; color:var(--text2); text-transform:uppercase;">Amount</span>
+                <span id="bank-amount" style="color:var(--success); font-weight:700;"></span>
+              </div>
+              <div style="display:flex; justify-content:space-between; align-items:center;">
+                <span style="font-size:0.75rem; color:var(--text2); text-transform:uppercase;">Expires</span>
+                <span id="bank-expiry" style="color:var(--warning); font-size:0.85rem;"></span>
+              </div>
+            </div>
+            <div class="alert alert-info" style="font-size:0.8rem; margin-bottom:12px;">
+              ⚠️ Transfer the <strong>exact amount</strong> shown. Click "I've Paid — Check Now" to get voucher.
+            </div>
+            <button class="btn btn-success" onclick="checkPayment()" id="btn-check-payment">✅ I've Paid — Check Now</button>
+          </div>
+          <div id="bank-error" style="display:none;">
+            <div class="alert alert-danger" id="bank-error-msg"></div>
+          </div>
+        </div>
+
+        <!-- Paystack tab content -->
+        <div id="tab-content-pstk" style="display:none;">
+          <div id="pstk-bank-loading" style="text-align:center; padding:20px 0; color:var(--text2); font-size:0.85rem;">
+            <span class="flicker">Generating account...</span>
+          </div>
+          <div id="pstk-bank-details" style="display:none;">
+            <div style="background:var(--surface2); border:1px solid var(--border); border-radius:12px; padding:14px; margin-bottom:12px;">
+              <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
+                <span style="font-size:0.75rem; color:var(--text2); text-transform:uppercase;">Bank</span>
+                <span id="pstk-bank-name" style="font-weight:600; color:var(--text);"></span>
+              </div>
+              <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
+                <span style="font-size:0.75rem; color:var(--text2); text-transform:uppercase;">Account No.</span>
+                <div style="display:flex; align-items:center; gap:8px;">
+                  <span id="pstk-account-number" style="font-family:'JetBrains Mono',monospace; font-size:1.1rem; color:var(--accent); font-weight:700; letter-spacing:2px;"></span>
+                  <button onclick="copyAccountNumber('pstk-account-number')" style="background:var(--border); border:none; border-radius:6px; color:var(--text); padding:4px 8px; cursor:pointer; font-size:0.75rem;">Copy</button>
+                </div>
+              </div>
+              <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
+                <span style="font-size:0.75rem; color:var(--text2); text-transform:uppercase;">Account Name</span>
+                <span id="pstk-account-name" style="color:var(--text); font-size:0.85rem;"></span>
+              </div>
+              <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
+                <span style="font-size:0.75rem; color:var(--text2); text-transform:uppercase;">Amount</span>
+                <span id="pstk-amount" style="color:var(--success); font-weight:700;"></span>
+              </div>
+              <div style="display:flex; justify-content:space-between; align-items:center;">
+                <span style="font-size:0.75rem; color:var(--text2); text-transform:uppercase;">Expires</span>
+                <span id="pstk-expiry" style="color:var(--warning); font-size:0.85rem;"></span>
+              </div>
+            </div>
+            <div class="alert alert-info" style="font-size:0.8rem; margin-bottom:12px;">
+              ⚠️ Transfer the <strong>exact amount</strong> shown. Click "I've Paid — Check Now" to get voucher
+            </div>
+            <button class="btn btn-success" onclick="checkPayment()" id="btn-check-payment-pstk">✅ I've Paid — Check Now</button>
+          </div>
+          <div id="pstk-bank-error" style="display:none;">
+            <div class="alert alert-danger" id="pstk-bank-error-msg"></div>
+          </div>
+        </div>
+
+        <button class="btn btn-secondary" onclick="goToPage2()" style="margin-top:16px;">← Back</button>
+        <div style="margin-top:12px; font-size:0.78rem; color:var(--text2); text-align:center;">
+          Need help? Call <strong id="support-phone-display"></strong>
+        </div>
+      </div>
+
+      <!-- Waiting card (shown after I've Paid clicked) -->
+      <div class="card" id="waiting-card" style="display:none;">
+        <div class="waiting-card">
+          <div class="waiting-spinner"></div>
+          <div class="waiting-title">Confirming your payment...</div>
+          <div class="waiting-sub">
+            Your voucher code will appear here automatically.<br>
+            This usually takes less than 30 seconds.<br><br>
+            📞 No code after <strong id="support-wait-mins">10</strong> mins?
+            Contact support: <strong id="support-phone-display"></strong>
+          </div>
+        </div>
+        <div style="margin-top:20px; display:flex; flex-direction:column; gap:8px;">
+          <button class="btn btn-success" onclick="checkPayment()" id="btn-check-payment-2">
+            ✅ Check Again
+          </button>
+          <button class="btn btn-ghost" onclick="resetBuy()">
+            ← Buy a Different Plan
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Page 4: Voucher Delivered -->
+    <div id="page-4" class="page">
+      <div class="card">
+        <div class="voucher-display">
+          <div class="success-icon">🎉</div>
+          <div id="voucher-product-name" style="font-size:0.85rem; color:var(--text2); margin-bottom:8px;"></div>
+          <div class="voucher-code" id="voucher-display">—</div>
+          <button class="voucher-copy-btn" onclick="copyVoucher()">📋 COPY CODE</button>
+          <div style="margin-top:12px; font-size:0.78rem; color:var(--text2); text-align:center;">
+  Need help? Call <strong id="support-phone-display-4"></strong>
+</div>
+        </div>
+        <div class="divider"></div>
+        <div class="alert alert-warning" style="margin-bottom:12px; font-size:0.82rem;">
+          ⚠️ <strong>Store your voucher somewhere safe until expired.</strong> You can only retrieve vouchers purchased within 15 mins from now on this same device.
+        </div>
+        <div class="alert alert-info" style="margin-bottom:0;">
+          📡 Connect to the WiFi → You'll be redirected to enter your voucher code.
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-title">📲 Track Your Data</div>
+        <p class="instructions" style="list-style:none; line-height:1.8;">
+          🤖 Android: Download <strong>GlassWire</strong> on Play Store<br>
+          🍎 iOS: Download <strong>My Data Manager</strong> on App Store
+        </p>
+      </div>
+
+      <!-- Review card -->
+      <div class="card review-card">
+        <div class="card-title">⭐ Enjoying KanBooster?</div>
+        <div class="review-stars">★★★★★</div>
+        <p style="font-size:0.85rem; color:var(--text2); margin-bottom:14px; line-height:1.6;">
+          If our service was fast and smooth, please take 30 seconds to leave us a review. It helps us serve more customers like you!
+        </p>
+        <a href="#" id="review-link" target="_blank" rel="noopener noreferrer"
+           style="display:block; width:100%; padding:12px; background:linear-gradient(135deg,#fbbf24,#f59e0b); border:none; border-radius:12px; color:#000; font-family:'Syne',sans-serif; font-weight:700; font-size:0.9rem; text-align:center; text-decoration:none; transition:all 0.2s; letter-spacing:0.5px;"
+           onmouseover="this.style.transform='translateY(-1px)'"
+           onmouseout="this.style.transform='translateY(0)'">
+          ⭐ Leave a Review for Afri-EO
+        </a>
+      </div>
+
+      <button class="btn btn-secondary" onclick="resetBuy()" style="margin-top:4px;">Buy Another Voucher</button>
+    </div>
+  </div>
+
+  <!-- RETRIEVE FLOW -->
+  <div id="tab-retrieve" class="page">
+    <div class="card">
+      <div class="card-title">🔍 Retrieve Your Code</div>
+      <div class="alert alert-info">
+        Store your voucher somewhere safe until expired, you can only retrieve vouchers purchased within the last <strong>15min</strong> from this same device.
+      </div>
+      <label>Phone Number Used During Purchase</label>
+      <input type="tel" id="retrieve-phone" placeholder="e.g. 08012345678" maxlength="14" autocomplete="tel" autocorrect="off">
+      <button class="btn btn-primary" onclick="retrieveCode()">Find My Voucher →</button>
+    </div>
+    <div id="retrieve-result" style="display:none;"></div>
+  </div>
+
+  <div id="tab-balance" class="page">
+    <div class="card">
+      <div class="card-title">📊 Check Balance</div>
+      <div class="alert alert-info">
+        Make sure you're connected to KanBooster WiFi, then enter your site name and voucher code.
+      </div>
+      <label>Site Name</label>
+      <input type="text" id="balance-site-name" placeholder="Enter the site name you connected to" maxlength="50" autocomplete="off" autocorrect="off">
+      <label>Voucher Code</label>
+      <input type="text" id="balance-voucher-code" placeholder="Enter voucher code" maxlength="20" style="letter-spacing:1px;" autocomplete="off" autocorrect="off">
+      <button class="btn btn-primary" onclick="checkBalance()">Check Balance →</button>
+    </div>
+    <div id="balance-result" style="display:none;"></div>
+  </div>
+
+  <div class="footer">
+    <div style="margin-bottom:10px; font-size:0.82rem; color:var(--text2); line-height:1.8;">
+      Need help?
+      <a href="https://chat.whatsapp.com/LjhukTZ1As0KVetTx8GqcZ" target="_blank" rel="noopener"
+        style="color:#25D366; font-weight:700; text-decoration:none;">
+        💬 Join WhatsApp Group
+      </a>
+      &nbsp;•&nbsp; Call
+      <a href="tel:07078582461" style="color:var(--accent); font-weight:700; text-decoration:none;">
+        07078582461
+      </a>
+    </div>
+    Powered by Afri EO Limited &nbsp;•&nbsp; Secure payments by Flutterwave
+  </div>
+</div>
+
+<script src="https://js.paystack.co/v1/inline.js"></script>
+<script>
+// ============================================
+// ALL API CALLS GO TO YOUR SERVER — NO KEYS HERE
+// ============================================
+const API = ''; // empty = same origin (your VPS)
+const SUPPORT_PHONE = ''; // loaded from server
+
+let selectedProduct = null;
+let identifierCode = null;
+let currentPhone = null;
+let currentSite = null;
+let prefetchIdentifier = null;
+let prefetchBankAccountPromise = null;
+let flwPublicKey = null;
+let deviceId = getDeviceId();
+let autoCheckTimer = null;
+let settings = {};
+
+// ============================================
+// DEVICE FINGERPRINT
+// ============================================
+function getDeviceId() {
+  let id = localStorage.getItem('kb_device_id');
+  if (!id) {
+    id = 'dev_' + Date.now().toString(36) + '_' +
+         Math.random().toString(36).substr(2, 9) + '_' +
+         (navigator.userAgent.length * 7).toString(36) + '_' +
+         (screen.width * screen.height).toString(36);
+    localStorage.setItem('kb_device_id', id);
+  }
+  return id;
+}
+
+function generateIdentifier() {
+  const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
+  let result = '';
+  for (let i = 0; i < 20; i++) result += chars.charAt(Math.floor(Math.random() * chars.length));
+  return result;
+}
+
+// ============================================
+// API HELPERS
+// ============================================
+async function apiGet(endpoint) {
+  const res = await fetch(API + endpoint);
+  if (!res.ok) throw new Error(await res.text());
+  return res.json();
+}
+
+async function apiPost(endpoint, data) {
+  const res = await fetch(API + endpoint, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(data),
+  });
+  const json = await res.json();
+  if (!res.ok) throw new Error(json.error || 'Request failed');
+  return json;
+}
+
+// ============================================
+// LOAD PRODUCTS
+// ============================================
+
+
+async function onSiteSubmit() {
+  const raw = document.getElementById('site-select').value.trim();
+  const errEl = document.getElementById('site-error');
+  if (!raw) {
+    errEl.textContent = 'Please enter your site name.';
+    errEl.style.display = 'block';
+    return;
+  }
+
+  errEl.style.display = 'none';
+  showLoading('Validating site...');
+
+  try {
+    const { valid } = await apiPost('/api/validate-site', { site_name: raw });
+    hideLoading();
+    if (!valid) {
+      errEl.textContent = 'Site name not recognised. Please check and try again.';
+      errEl.style.display = 'block';
+      return;
+    }
+    selectedProduct = null;
+    currentSite = raw.replace(/\s+/g, '').toLowerCase();
+    // ADD these lines immediately after:
+// Pre-generate identifier only (bank account needs real phone+amount)
+    prefetchIdentifier = generateIdentifier();
+    prefetchBankAccountPromise = null; // silent fail — goToPage3 will create a fresh one if needed
+    document.getElementById('btn-select-product').disabled = true;
+    document.querySelectorAll('.product-card').forEach(c => c.classList.remove('selected'));
+    document.getElementById('products-section').style.display = 'block';
+document.getElementById('site-input-card').style.display = 'none';
+loadProducts(raw.replace(/\s+/g, ''));
+  } catch(e) {
+    hideLoading();
+    errEl.textContent = 'Could not validate site. Please try again.';
+    errEl.style.display = 'block';
+  }
+}
+async function loadProducts(siteName) {
+  try {
+    document.getElementById('products-loading').style.display = 'block';
+    document.getElementById('products-grid').style.display = 'none';
+    document.getElementById('no-products').style.display = 'none';
+
+    const { products } = await apiGet(`/api/products?site=${encodeURIComponent(siteName)}`);
+
+    if (!products || products.length === 0) {
+      document.getElementById('products-loading').style.display = 'none';
+      document.getElementById('no-products').style.display = 'block';
+      return;
+    }
+
+    const grid = document.getElementById('products-grid');
+    grid.innerHTML = '';
+    products.forEach(p => {
+      const card = document.createElement('div');
+      card.className = 'product-card';
+      card.innerHTML = `
+        <div>
+          <div class="product-name">${p.name}</div>
+          <div style="font-size:0.75rem; color:var(--success); margin-top:2px;">✅ Available</div>
+        </div>
+        <div class="product-price">₦${parseInt(p.price).toLocaleString()}</div>
+      `;
+      card.onclick = () => {
+        document.querySelectorAll('.product-card').forEach(c => c.classList.remove('selected'));
+        card.classList.add('selected');
+        selectedProduct = { id: p.product_id, name: p.name, price: parseInt(p.price) };
+        document.getElementById('btn-select-product').disabled = false;
+      };
+      grid.appendChild(card);
+    });
+
+    document.getElementById('products-loading').style.display = 'none';
+    grid.style.display = 'flex';
+  } catch(e) {
+    document.getElementById('products-loading').innerHTML = '<span style="color:var(--danger)">Error loading plans. Please refresh.</span>';
+  }
+}
+
+// ============================================
+// NAVIGATION
+// ============================================
+function goToPage1() {
+  showPage('page-1');
+  setStep(1);
+}
+
+function goToPage2() {
+  if (!selectedProduct || !currentSite) return;
+  showPage('page-2');
+  setStep(2);
+}
+
+async function goToPage3() {
+  const phone = document.getElementById('phone-input').value.trim();
+  const siteName = document.getElementById('site-select').value.replace(/\s+/g, '');
+  if (!phone || phone.length < 10) { alert('Please enter a valid phone number.'); return; }
+  if (!siteName) { alert('Please go back and select a site first.'); return; }
+
+  showLoading('Checking stock...');
+  try {
+    const { in_stock } = await apiPost('/api/check-stock', { product_id: selectedProduct.id, site_name: siteName });
+    if (!in_stock) { hideLoading(); alert(`Sorry, ${selectedProduct.name} is currently out of stock.`); return; }
+
+    currentPhone = phone;
+    currentSite = siteName.replace(/\s+/g, '').toLowerCase();
+
+    const { is_new } = await apiPost('/api/check-customer', { phone, site_name: currentSite });
+    hideLoading();
+
+    if (is_new) {
+      showPage('page-2b'); // ask for lodge name
+      return;
+    }
+    await proceedToPayment();
+  } catch(e) {
+    hideLoading();
+    alert('Error: ' + e.message);
+  }
+}
+
+async function submitLodgeName() {
+  const lodgeName = document.getElementById('lodge-input').value.trim();
+  if (!lodgeName) { alert('Please enter your lodge name.'); return; }
+  showLoading('Saving...');
+  try {
+    await apiPost('/api/register-customer', { phone: currentPhone, site_name: currentSite, lodge_name: lodgeName });
+    hideLoading();
+    await proceedToPayment();
+  } catch(e) {
+    hideLoading();
+    alert('Error: ' + e.message);
+  }
+}
+
+async function proceedToPayment() {
+  showLoading('Setting up payment...');
+  identifierCode = prefetchIdentifier || generateIdentifier();
+  const result = await apiPost('/api/create-transaction', {
+    phone: currentPhone, site_name: currentSite, product_id: selectedProduct.id,
+    identifier_code: identifierCode, device_id: deviceId,
+  });
+  selectedProduct.price = result.amount;
+  selectedProduct.name  = result.product_name;
+  pstkPublicKey         = result.pstk_public_key || '';
+  pstkLoaded            = false;
+  localStorage.setItem('kb_last_identifier', identifierCode);
+  localStorage.setItem('kb_last_phone', currentPhone);
+
+  const bankAccountPromise = apiPost('/api/get-bank-account', {
+    identifier_code: identifierCode, phone: currentPhone, amount: selectedProduct.price,
+  });
+  hideLoading();
+  showPage('page-3');
+  setStep(3);
+  loadBankAccount(bankAccountPromise);
+}
+
+// ============================================
+// PAYMENT TABS
+// ============================================
+let activePaymentTab = 'flw';
+let pstkPublicKey    = '';
+let pstkLoaded       = false;
+
+function switchPaymentTab(tab) {
+  activePaymentTab = tab;
+  const flwBtn     = document.getElementById('tab-btn-flw');
+  const pstkBtn    = document.getElementById('tab-btn-pstk');
+  const flwContent = document.getElementById('tab-content-flw');
+  const pstkContent= document.getElementById('tab-content-pstk');
+
+  if (tab === 'flw') {
+    flwBtn.style.background  = 'var(--surface)';
+    flwBtn.style.color       = 'var(--accent)';
+    flwBtn.style.boxShadow   = '0 2px 8px rgba(0,0,0,0.3)';
+    pstkBtn.style.background = 'transparent';
+    pstkBtn.style.color      = 'var(--text2)';
+    pstkBtn.style.boxShadow  = 'none';
+    flwContent.style.display  = 'block';
+    pstkContent.style.display = 'none';
+  } else {
+    pstkBtn.style.background = 'var(--surface)';
+    pstkBtn.style.color      = '#36d07e';
+    pstkBtn.style.boxShadow  = '0 2px 8px rgba(0,0,0,0.3)';
+    flwBtn.style.background  = 'transparent';
+    flwBtn.style.color       = 'var(--text2)';
+    flwBtn.style.boxShadow   = 'none';
+    pstkContent.style.display = 'block';
+    flwContent.style.display  = 'none';
+
+    // Load Paystack account on first switch to tab
+    if (!pstkLoaded) {
+      pstkLoaded = true;
+      loadPaystackBankAccount();
+    }
+  }
+}
+
+async function loadBankAccount(bankAccountPromise) {
+  document.getElementById('bank-loading').style.display = 'block';
+  document.getElementById('bank-details').style.display = 'none';
+  document.getElementById('bank-error').style.display   = 'none';
+
+  try {
+    const result = await bankAccountPromise;
+    document.getElementById('bank-name').textContent           = result.bank_name;
+    document.getElementById('bank-account-number').textContent = result.account_number;
+    document.getElementById('bank-account-name').textContent   = result.account_name;
+    document.getElementById('bank-amount').textContent = `₦${parseFloat(result.amount).toLocaleString('en-NG', {minimumFractionDigits:2, maximumFractionDigits:2})}`;
+
+    if (result.expires_at) {
+      const expiry = new Date(result.expires_at);
+      document.getElementById('bank-expiry').textContent = expiry.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    } else {
+      document.getElementById('bank-expiry').textContent = '30 minutes';
+    }
+
+    document.getElementById('bank-loading').style.display = 'none';
+    document.getElementById('bank-details').style.display = 'block';
+
+  } catch(e) {
+    document.getElementById('bank-loading').style.display    = 'none';
+    document.getElementById('bank-error-msg').textContent    = e.message || 'Could not generate payment account. Please try again.';
+    document.getElementById('bank-error').style.display      = 'block';
+  }
+}
+
+async function loadPaystackBankAccount() {
+  document.getElementById('pstk-bank-loading').style.display = 'block';
+  document.getElementById('pstk-bank-details').style.display = 'none';
+  document.getElementById('pstk-bank-error').style.display   = 'none';
+
+  try {
+    const result = await apiPost('/api/get-paystack-bank-account', {
+      identifier_code: identifierCode,
+      phone:           currentPhone,
+      amount:          selectedProduct.price,
+    });
+
+    document.getElementById('pstk-bank-name').textContent    = result.bank_name;
+    document.getElementById('pstk-account-number').textContent = result.account_number;
+    document.getElementById('pstk-account-name').textContent  = result.account_name;
+    document.getElementById('pstk-amount').textContent = `₦${parseFloat(result.amount).toLocaleString('en-NG', {minimumFractionDigits:2, maximumFractionDigits:2})}`;
+    if (result.expires_at) {
+      const expiry = new Date(result.expires_at);
+      document.getElementById('pstk-expiry').textContent = expiry.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    } else {
+      document.getElementById('pstk-expiry').textContent = '30 minutes';
+    }
+
+    document.getElementById('pstk-bank-loading').style.display = 'none';
+    document.getElementById('pstk-bank-details').style.display = 'block';
+
+  } catch(e) {
+    document.getElementById('pstk-bank-loading').style.display  = 'none';
+    document.getElementById('pstk-bank-error-msg').textContent  = e.message || 'Could not generate Paystack account. Try Flutterwave tab.';
+    document.getElementById('pstk-bank-error').style.display    = 'block';
+  }
+}
+
+function copyAccountNumber(elementId) {
+  const num = document.getElementById(elementId || 'bank-account-number').textContent;
+  navigator.clipboard.writeText(num).then(() => {
+    alert('Account number copied!');
+  });
+}
+// ============================================
+// CHECK PAYMENT (manual)
+// ============================================
+async function checkPayment() {
+  const btnFlw  = document.getElementById('btn-check-payment');
+  const btnPstk = document.getElementById('btn-check-payment-pstk');
+  const btn = activePaymentTab === 'pstk' ? btnPstk : btnFlw;
+  if (btnFlw)  { btnFlw.disabled  = true; btnFlw.textContent  = '⏳ Checking...'; }
+  if (btnPstk) { btnPstk.disabled = true; btnPstk.textContent = '⏳ Checking...'; }
+
+  try {
+    const result = await apiGet(`/api/transaction-status?code=${encodeURIComponent(identifierCode)}`);
+
+    if (result.status === 'completed' && result.voucher) {
+      saveVoucherLocally(result.voucher);
+      showVoucher(result.voucher, result.product_name || selectedProduct?.name);
+      return;
+    }
+
+    if (result.status === 'confirmed') {
+      // Try to deliver now
+      try {
+        const deliver = await apiPost('/api/confirm-payment', {
+          identifier_code: identifierCode,
+          flw_ref: '',
+          tx_ref: identifierCode,
+        });
+        if (deliver.success && deliver.voucher) {
+          saveVoucherLocally(deliver.voucher);
+          showVoucher(deliver.voucher, deliver.product_name || selectedProduct?.name);
+          return;
+        }
+      } catch(e) { /* will retry */ }
+    }
+
+    if (result.status === 'underpaid') {
+      if (btnFlw)  { btnFlw.disabled  = false; btnFlw.textContent  = '✅ I\'ve Paid — Check Now'; }
+    if (btnPstk) { btnPstk.disabled = false; btnPstk.textContent = '✅ I\'ve Paid — Check Now'; }
+      alert(`⚠️ Underpayment detected. Contact support: ${settings.support_phone || ''}`);
+      return;
+    }
+
+    if (result.status === 'overpaid') {
+      if (btnFlw)  { btnFlw.disabled  = false; btnFlw.textContent  = '✅ I\'ve Paid — Check Now'; }
+    if (btnPstk) { btnPstk.disabled = false; btnPstk.textContent = '✅ I\'ve Paid — Check Now'; }
+      alert(`⚠️ Overpayment detected. Contact support: ${settings.support_phone || ''}`);
+      return;
+    }
+
+    if (result.status === 'out_of_stock') {
+      if (btnFlw)  { btnFlw.disabled  = false; btnFlw.textContent  = '🔄 Try Again'; }
+    if (btnPstk) { btnPstk.disabled = false; btnPstk.textContent = '🔄 Try Again'; }
+      alert(`⚠️ Out of stock. Contact support: ${settings.support_phone || ''}`);
+      return;
+    }
+
+    if (btnFlw)  { btnFlw.disabled  = false; btnFlw.textContent  = '⏳ Not yet — Try Again'; }
+    if (btnPstk) { btnPstk.disabled = false; btnPstk.textContent = '⏳ Not yet — Try Again'; }
+    setTimeout(() => {
+      if (btnFlw)  btnFlw.textContent  = '✅ I\'ve Paid — Check Now';
+      if (btnPstk) btnPstk.textContent = '✅ I\'ve Paid — Check Now';
+    }, 5000);
+
+  } catch(e) {
+    if (btnFlw)  { btnFlw.disabled  = false; btnFlw.textContent  = '✅ I\'ve Paid — Check Now'; }
+    if (btnPstk) { btnPstk.disabled = false; btnPstk.textContent = '✅ I\'ve Paid — Check Now'; }
+    console.error('checkPayment error:', e);
+  }
+}
+
+function startAutoCheck() {
+  if (autoCheckTimer) clearInterval(autoCheckTimer);
+  let checks = 0;
+  const maxChecks = parseInt(settings?.max_check_count || '10');
+
+  autoCheckTimer = setInterval(async () => {
+    if (!identifierCode) return;
+    checks++;
+    if (checks > maxChecks) {
+      clearInterval(autoCheckTimer);
+      alert(`⚠️ Could not confirm payment automatically. Please tap "I've Paid" or contact support: ${settings.support_phone || ''}`);
+      return;
+    }
+    try {
+      const result = await apiGet(`/api/transaction-status?code=${encodeURIComponent(identifierCode)}`);
+      if (result.status === 'completed' && result.voucher) {
+        clearInterval(autoCheckTimer);
+        saveVoucherLocally(result.voucher);
+        showVoucher(result.voucher, result.product_name || selectedProduct?.name);
+      }
+    } catch(e) { /* ignore */ }
+  }, 30000);
+}
+
+// ============================================
+// VOUCHER
+// ============================================
+function saveVoucherLocally(code) {
+  localStorage.setItem('kb_voucher_' + identifierCode, code);
+  localStorage.setItem('kb_voucher_time_' + identifierCode, Date.now().toString());
+}
+
+function showVoucher(code, productName) {
+  document.getElementById('voucher-display').textContent = code;
+  document.getElementById('voucher-product-name').textContent = productName || selectedProduct?.name || '';
+  showPage('page-4');
+  setStep(4);
+  document.getElementById('step-4').classList.add('done');
+}
+
+
+function copyVoucher() {
+  const code = document.getElementById('voucher-display').textContent;
+  navigator.clipboard.writeText(code).then(() => {
+    const btn = document.querySelector('.voucher-copy-btn');
+    btn.textContent = '✅ COPIED!';
+    setTimeout(() => { btn.textContent = '📋 COPY CODE'; }, 2000);
+  });
+}
+
+// ============================================
+// RETRIEVE
+// ============================================
+async function retrieveCode() {
+  const phone = document.getElementById('retrieve-phone').value.trim().replace(/[\s\-().]/g, '');
+  if (!phone || phone.length < 10) { alert('Please enter a valid phone number.'); return; }
+
+  showLoading('Searching for your voucher...');
+
+  try {
+    const result = await apiPost('/api/retrieve-voucher', { phone, device_id: deviceId });
+    hideLoading();
+
+    const resultDiv = document.getElementById('retrieve-result');
+    resultDiv.style.display = 'block';
+
+    if (!result.found) {
+      if (result.device_mismatch) {
+        resultDiv.innerHTML = `<div class="card"><div class="alert alert-warning">🔒 Security check failed. Vouchers can only be retrieved from the <strong>same device</strong> used during purchase.<br><br>Contact support: <strong>${settings.support_phone || ''}</strong></div></div>`;
+      } else {
+        resultDiv.innerHTML = `<div class="card"><div class="alert alert-warning">❌ No vouchers found for this number in the last 15 mins of delivery from this device.<br><br>Contact support: <strong>${settings.support_phone || ''}</strong></div></div>`;
+      }
+      return;
+    }
+
+    let html = '<div class="card"><div class="card-title">✅ Your Vouchers</div>';
+    for (const v of result.vouchers) {
+      const date = new Date(v.timestamp).toLocaleDateString('en-NG', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' });
+      html += `<div style="background:var(--surface2); border:1px solid var(--border); border-radius:12px; padding:14px; margin-bottom:10px;">
+        <div style="display:flex; justify-content:space-between; margin-bottom:8px;">
+          <span style="font-size:0.8rem; color:var(--text2);">${date}</span>
+          <span style="font-size:0.8rem; color:var(--accent);">₦${parseInt(v.amount).toLocaleString()}</span>
+        </div>
+        <div style="font-family:'Syne',sans-serif; font-size:1.3rem; font-weight:800; color:var(--accent); letter-spacing:2px; word-break:break-all; margin-bottom:8px;">${v.voucher_code}</div>
+        <button onclick="navigator.clipboard.writeText('${v.voucher_code}').then(()=>this.textContent='✅ Copied!').catch(()=>{})"
+          style="background:rgba(0,212,255,0.1); border:1px solid var(--accent); color:var(--accent); border-radius:8px; padding:6px 16px; font-size:0.78rem; font-family:'Syne',sans-serif; font-weight:700; cursor:pointer;">
+          📋 COPY
+        </button>
+      </div>`;
+    }
+    html += '</div>';
+    resultDiv.innerHTML = html;
+
+  } catch(e) {
+    hideLoading();
+    alert('Error: ' + e.message);
+  }
+}
+
+// ============================================
+// UI HELPERS
+// ============================================
+function showPage(pageId) {
+  document.querySelectorAll('#tab-buy .page').forEach(p => p.classList.remove('active'));
+  document.getElementById(pageId).classList.add('active');
+}
+
+function setStep(n) {
+  for (let i = 1; i <= 4; i++) {
+    const s = document.getElementById(`step-${i}`);
+    s.classList.remove('active', 'done');
+    if (i < n) s.classList.add('done');
+    if (i === n) s.classList.add('active');
+  }
+}
+
+function switchTab(tab) {
+  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+  document.querySelectorAll('.page[id^="tab-"]').forEach(p => p.classList.remove('active'));
+  if (tab === 'buy') {
+    document.querySelectorAll('.tab')[0].classList.add('active');
+    document.getElementById('tab-buy').classList.add('active');
+  } else if (tab === 'retrieve') {
+    document.querySelectorAll('.tab')[1].classList.add('active');
+    document.getElementById('tab-retrieve').classList.add('active');
+    document.getElementById('retrieve-result').style.display = 'none';
+  } else if (tab === 'balance') {
+    document.querySelectorAll('.tab')[2].classList.add('active');
+    document.getElementById('tab-balance').classList.add('active');
+    document.getElementById('balance-result').style.display = 'none';
+  }
+}
+
+// ============================================
+// BALANCE CHECK
+// ============================================
+async function checkBalance() {
+  const code = document.getElementById('balance-voucher-code').value.trim();
+  const site = document.getElementById('balance-site-name').value.trim();
+  const resultEl = document.getElementById('balance-result');
+
+  if (!code || !site) {
+    resultEl.style.display = 'block';
+    resultEl.innerHTML = `
+      <div class="card">
+        <div class="alert alert-error">❌ Please enter both site name and voucher code.</div>
+      </div>`;
+    return;
+  }
+
+  resultEl.style.display = 'block';
+  resultEl.innerHTML = `<div class="card"><div style="text-align:center; padding:8px 0;">Checking...</div></div>`;
+
+  try {
+    const data = await apiPost('/api/get-balance-link', { voucher_code: code, site_name: site });
+
+    if (!data.found) {
+      const msg = data.error === 'site_config_missing'
+        ? '❌ Balance check isn\'t configured for this site yet.'
+        : '❌ No balance link found yet. Connect to KanBooster WiFi with this voucher first, then try again.';
+      resultEl.innerHTML = `
+        <div class="card">
+          <div class="alert alert-error">${msg}</div>
+        </div>`;
+      return;
+    }
+
+    resultEl.innerHTML = `<div class="card"><div style="text-align:center; padding:8px 0;">Redirecting...</div></div>`;
+    window.location.href = data.balance_url;
+  } catch(e) {
+    resultEl.innerHTML = `
+      <div class="card">
+        <div class="alert alert-error">⚠️ Something went wrong. Try again.</div>
+      </div>`;
+  }
+}
+
+function showLoading(text = 'Loading...') {
+  document.getElementById('loading-text').textContent = text;
+  document.getElementById('loading-overlay').classList.add('show');
+}
+
+function hideLoading() {
+  document.getElementById('loading-overlay').classList.remove('show');
+}
+
+function resetBuy() {
+  selectedProduct = null;
+  identifierCode = null;
+  currentPhone = null;
+  currentSite = null;
+  flwPublicKey = null;
+  if (autoCheckTimer) clearInterval(autoCheckTimer);
+  document.getElementById('btn-select-product').disabled = true;
+  document.getElementById('payment-summary-card').style.display = 'block';
+  document.getElementById('waiting-card').style.display = 'none';
+  document.querySelectorAll('.product-card').forEach(c => c.classList.remove('selected'));
+  document.getElementById('phone-input').value = '';
+  document.getElementById('site-select').value = '';
+document.getElementById('site-error').style.display = 'none';
+document.getElementById('products-section').style.display = 'none';
+document.getElementById('site-input-card').style.display = 'block';
+  goToPage1();
+}
+
+// ============================================
+// INIT
+// ============================================
+window.onload = async () => {
+  try {
+    settings = await apiGet('/api/public-settings');
+    const waitMins = parseInt(settings.auto_check_interval || '5') * 2;
+    const phone = settings.support_phone || '';
+    document.getElementById('support-phone-display').textContent = phone;
+    document.getElementById('support-phone-display-1').textContent = phone;
+    document.getElementById('support-phone-display-2').textContent = phone;
+    document.getElementById('support-phone-display-4').textContent = phone;
+    document.getElementById('support-wait-mins').textContent = waitMins;
+    if (settings.review_link) {
+      document.getElementById('review-link').href = settings.review_link;
+    }
+    initTutorial();
+  } catch(e) {}
+};
+
+
+
+// ============================================
+// TUTORIAL
+// ============================================
+
+function getTutorialUrl() {
+  const link = settings.tutorial_link || '';
+  if (!link) return '';
+  // Local file on VPS — starts with /
+  if (link.startsWith('/')) return link;
+  // YouTube
+  const ytMatch = link.match(/(?:youtube\.com\/watch\?v=|youtu\.be\/|youtube\.com\/shorts\/)([^&?/]+)/);
+  if (ytMatch) return `https://www.youtube-nocookie.com/embed/${ytMatch[1]}?autoplay=1&mute=1&rel=0`;
+  // Google Drive
+  const driveMatch = link.match(/\/file\/d\/([^/]+)/);
+  if (driveMatch) return `https://drive.google.com/file/d/${driveMatch[1]}/preview`;
+  return link;
+}
+
+function openTutorial() {
+  const url = getTutorialUrl();
+  if (!url) return;
+  const vid = document.getElementById('tutorial-video');
+  vid.src = url;
+  vid.load();
+  document.getElementById('tutorial-modal').classList.add('show');
+  // Play and go fullscreen after short delay
+  setTimeout(() => {
+    vid.play().then(() => {
+      const el = vid;
+      if (el.requestFullscreen) el.requestFullscreen();
+      else if (el.webkitRequestFullscreen) el.webkitRequestFullscreen();
+      else if (el.mozRequestFullScreen) el.mozRequestFullScreen();
+    }).catch(() => {
+      // Autoplay blocked — video still shows, user can press play
+    });
+  }, 500);
+}
+
+function closeTutorial() {
+  const vid = document.getElementById('tutorial-video');
+  vid.pause();
+  vid.src = '';
+  document.getElementById('tutorial-modal').classList.remove('show');
+  // Exit fullscreen if active
+  if (document.fullscreenElement) document.exitFullscreen().catch(() => {});
+}
+
+function initTutorial() {
+  const url = getTutorialUrl();
+  const tutCard = document.getElementById('wifi-tutorial-card');
+  const tutLink = document.getElementById('wifi-tutorial-link');
+  if (settings.tutorial_link && tutCard) { tutLink.href = settings.tutorial_link; tutCard.style.display = 'block'; }
+  if (!url) return;
+  const isFirst = !localStorage.getItem('kb_returning');
+  if (isFirst) {
+    localStorage.setItem('kb_returning', '1');
+    setTimeout(() => openTutorial(), 1500);
+  } else {
+    document.getElementById('tutorial-banner').style.display = 'flex';
+  }
+} 
+  
+</script>
+
+<!-- TUTORIAL MODAL (first time users) -->
+<div id="tutorial-modal">
+  <div class="tutorial-modal-box">
+    <div class="tutorial-modal-title">👋 Welcome to KanBooster!</div>
+    <div class="tutorial-modal-sub">Watch this quick guide before you buy your first voucher:</div>
+    <div class="tutorial-video-wrap">
+      <video id="tutorial-video" playsinline controls
+        style="width:100%; height:100%; object-fit:contain; display:block; background:#000;">
+      </video>
+    </div>
+    <button class="tutorial-close-btn" onclick="closeTutorial()">✅ Got it, let's go!</button>
+  </div>
+</div>
+
+<!-- TUTORIAL BANNER (returning users) -->
+<div id="tutorial-banner" class="tutorial-banner" style="display:none;" onclick="openTutorial()">
+  <div class="tutorial-banner-icon">▶️</div>
+  <div class="tutorial-banner-text">
+    <strong>Watch how to buy data</strong>
+    Step-by-step video guide
+  </div>
+</div>
+  
+</body>
+</html>
