@@ -1363,7 +1363,7 @@ app.get('/api/admin/transactions', verifyAdmin, async (req, res) => {
     if (status) query = query.eq('status', status);
     if (site) query = query.ilike('site_name', site.replace(/\s+/g, ''));
     if (phoneFilter) query = query.in('phone', phoneFilter);
-    if (search) query = query.or(`phone.ilike.%${search}%,payment_code.ilike.%${search}%`);
+    if (search) query = query.or(`phone.ilike.%${search}%,payment_code.ilike.%${search}%,voucher_code.ilike.%${search}%`);
     query = query.order('timestamp', { ascending: false })
       .range((page - 1) * pageSize, page * pageSize - 1);
 
