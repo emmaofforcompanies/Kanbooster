@@ -1141,17 +1141,17 @@ app.post('/api/retrieve-voucher', async (req, res) => {
     const { data: pending } = await supabase.from('web_transactions')
       .select('*')
       .eq('phone', phone)
-      .eq('status', 'pending')
+      .in('status', ['pending', 'confirmed'])
       .gte('timestamp', pendingCutoff)
       .order('timestamp', { ascending: false })
       .limit(3);
 
-    // For each pending transaction, check FLW then Paystack and complete on the spot
+    // For each pending/confirmed transaction, check FLW then Paystack and complete on the spot
     if (pending && pending.length > 0) {
       const https = require('https');
       for (const txn of pending) {
-        let paid = false;
-        let ref  = '';
+        let paid = txn.status === 'confirmed'; // payment already verified, just needs a voucher
+        let ref  = txn.flw_ref || '';
 
         // Check Flutterwave first
         try {
