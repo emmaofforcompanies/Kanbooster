@@ -1190,27 +1190,13 @@ function openTutorial() {
   if (!url) return;
   const vid = document.getElementById('tutorial-video');
   vid.src = url;
-  vid.load();
   document.getElementById('tutorial-modal').classList.add('show');
-  // Play and go fullscreen after short delay
-  setTimeout(() => {
-    vid.play().then(() => {
-      const el = vid;
-      if (el.requestFullscreen) el.requestFullscreen();
-      else if (el.webkitRequestFullscreen) el.webkitRequestFullscreen();
-      else if (el.mozRequestFullScreen) el.mozRequestFullScreen();
-    }).catch(() => {
-      // Autoplay blocked — video still shows, user can press play
-    });
-  }, 500);
 }
 
 function closeTutorial() {
   const vid = document.getElementById('tutorial-video');
-  vid.pause();
   vid.src = '';
   document.getElementById('tutorial-modal').classList.remove('show');
-  // Exit fullscreen if active
   if (document.fullscreenElement) document.exitFullscreen().catch(() => {});
 }
 
@@ -1237,9 +1223,9 @@ function initTutorial() {
     <div class="tutorial-modal-title">👋 Welcome to KanBooster!</div>
     <div class="tutorial-modal-sub">Watch this quick guide before you buy your first voucher:</div>
     <div class="tutorial-video-wrap">
-      <video id="tutorial-video" playsinline controls
-        style="width:100%; height:100%; object-fit:contain; display:block; background:#000;">
-      </video>
+      <iframe id="tutorial-video" allowfullscreen allow="autoplay; fullscreen"
+        style="width:100%; height:100%; border:none; display:block; background:#000;">
+      </iframe>
     </div>
     <button class="tutorial-close-btn" onclick="closeTutorial()">✅ Got it, let's go!</button>
   </div>
