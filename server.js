@@ -222,12 +222,12 @@ app.post('/api/save-balance-link', async (req, res) => {
     if (!voucherCode || !balancePath) {
       return res.status(400).json({ error: 'Missing fields' });
     }
-    await supabase.from('voucher_balance_links').upsert({
+    await supabase.from('voucher_balance_links').insert({
       voucher_code: voucherCode,
       balance_url: balancePath,
       site_name: siteName,
       updated_at: new Date().toISOString(),
-    }, { onConflict: 'voucher_code' });
+    });
     res.json({ success: true });
   } catch(e) {
     console.error('save-balance-link error:', e);
@@ -242,11 +242,13 @@ app.post('/api/get-balance-link', async (req, res) => {
     if (!voucherCode) return res.status(400).json({ error: 'Voucher code required' });
     if (!confirmedSite) return res.json({ found: false, error: 'site_required' });
 
-    const { data: link } = await supabase.from('voucher_balance_links')
+    const { data: links } = await supabase.from('voucher_balance_links')
       .select('balance_url, updated_at')
       .eq('voucher_code', voucherCode)
-      .single();
+      .order('updated_at', { ascending: false })
+      .limit(1);
 
+    const link = links && links[0];
     if (!link) return res.json({ found: false });
 
     const { data: config } = await supabase.from('site_balance_config')
@@ -265,6 +267,42 @@ app.post('/api/get-balance-link', async (req, res) => {
     res.json({ found: false });
   }
 });
+
+
+app.post('/api/get-balance-links', async (req, res) => {
+  try {
+    const voucherCode = sanitizeString(req.body.voucher_code || '', 30);
+    const confirmedSite = normalizeSiteName(sanitizeString(req.body.site_name || '', 50));
+    if (!voucherCode) return res.status(400).json({ error: 'Voucher code required' });
+    if (!confirmedSite) return res.json({ found: false, error: 'site_required' });
+
+    const { data: links } = await supabase.from('voucher_balance_links')
+      .select('balance_url, updated_at')
+      .eq('voucher_code', voucherCode)
+      .order('updated_at', { ascending: false });
+
+    if (!links || !links.length) return res.json({ found: false });
+
+    const { data: config } = await supabase.from('site_balance_config')
+      .select('balance_url')
+      .eq('site_name', confirmedSite)
+      .single();
+
+    if (!config) return res.json({ found: false, error: 'site_config_missing' });
+
+    const entries = links
+      .filter(l => l.balance_url)
+      .map(l => ({
+        updated_at: l.updated_at,
+        balance_url: config.balance_url.replace(/\/$/, '') + l.balance_url,
+      }));
+
+    res.json({ found: entries.length > 0, entries });
+  } catch(e) {
+    res.json({ found: false });
+  }
+});
+
 
 // Validate site name
 app.post('/api/validate-site', async (req, res) => {
