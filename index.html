@@ -1127,6 +1127,8 @@ async function showBalanceLog() {
   }
 }
 
+let balanceServerOptions = [];
+
 async function checkBalance() {
   const code = document.getElementById('balance-voucher-code').value.trim();
   const site = document.getElementById('balance-site-name').value.trim();
@@ -1145,7 +1147,7 @@ async function checkBalance() {
   resultEl.innerHTML = `<div class="card"><div style="text-align:center; padding:8px 0;">Checking...</div></div>`;
 
   try {
-    const data = await apiPost('/api/get-balance-link', { voucher_code: code, site_name: site });
+    const data = await apiPost('/api/get-balance-links', { voucher_code: code, site_name: site });
 
     if (!data.found) {
       const msg = data.error === 'site_config_missing'
@@ -1158,14 +1160,36 @@ async function checkBalance() {
       return;
     }
 
-    resultEl.innerHTML = `<div class="card"><div style="text-align:center; padding:8px 0;">Redirecting...</div></div>`;
-    window.location.href = data.balance_url;
+    const mostRecent = data.entries[0];
+    const first = data.entries[data.entries.length - 1];
+    balanceServerOptions = [mostRecent.balance_url, first.balance_url];
+
+    const server2Disabled = data.entries.length < 2 ? 'disabled' : '';
+
+    resultEl.innerHTML = `
+      <div class="card">
+        <label>Select Server</label>
+        <select id="balance-server-select">
+          <option value="0">Server 1</option>
+          <option value="1" ${server2Disabled}>Server 2${server2Disabled ? ' (unavailable)' : ''}</option>
+        </select>
+        <button class="btn btn-primary" onclick="goToSelectedBalanceServer()" style="margin-top:12px;">Go →</button>
+      </div>`;
   } catch(e) {
     resultEl.innerHTML = `
       <div class="card">
         <div class="alert alert-error">⚠️ Something went wrong. Try again.</div>
       </div>`;
   }
+}
+
+function goToSelectedBalanceServer() {
+  const idx = Number(document.getElementById('balance-server-select').value);
+  const url = balanceServerOptions[idx];
+  if (!url) return;
+  document.getElementById('balance-result').innerHTML =
+    `<div class="card"><div style="text-align:center; padding:8px 0;">Redirecting...</div></div>`;
+  window.location.href = url;
 }
 
 function showLoading(text = 'Loading...') {
