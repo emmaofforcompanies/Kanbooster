@@ -1172,7 +1172,7 @@ window.onload = async () => {
 // ============================================
 
 function getTutorialUrl() {
-  const link = settings.tutorial_link || '';
+  const link = settings.how_to_buy || '';
   if (!link) return '';
   // Local file on VPS — starts with /
   if (link.startsWith('/')) return link;
@@ -1205,6 +1205,7 @@ function initTutorial() {
   const tutCard = document.getElementById('wifi-tutorial-card');
   const tutLink = document.getElementById('wifi-tutorial-link');
   if (settings.tutorial_link && tutCard) { tutLink.href = settings.tutorial_link; tutCard.style.display = 'block'; }
+  // wifi-tutorial-card still uses tutorial_link (the separate "Tutorial Videos" link/card)
   if (!url) return;
   const isFirst = !localStorage.getItem('kb_returning');
   if (isFirst) {
