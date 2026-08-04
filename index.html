@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>KanBooster — WiFi Vouchers</title>
-<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:wght@300;400;500&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
 <style>
   :root {
     --bg: #0a0e1a;
@@ -83,10 +83,10 @@
   .voucher-display { text-align: center; padding: 8px 0; }
   .voucher-label { font-size: 0.72rem; color: var(--text2); letter-spacing: 2px; text-transform: uppercase; margin-bottom: 12px; }
   .voucher-code {
-    font-family: 'Syne', sans-serif; font-size: 1.8rem; font-weight: 800;
+    font-family: 'JetBrains Mono', monospace; font-size: 1.6rem; font-weight: 700;
     background: linear-gradient(135deg, var(--accent), var(--accent2));
     -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
-    letter-spacing: 2px; word-break: break-all; margin-bottom: 12px;
+    letter-spacing: 1px; word-break: break-all; margin-bottom: 12px;
   }
   .voucher-copy-btn {
     background: rgba(0,212,255,0.1); border: 1px solid var(--accent); color: var(--accent);
@@ -451,6 +451,7 @@
           <div class="success-icon">🎉</div>
           <div id="voucher-product-name" style="font-size:0.85rem; color:var(--text2); margin-bottom:8px;"></div>
           <div class="voucher-code" id="voucher-display">—</div>
+          <div id="voucher-site-display" style="font-family:'JetBrains Mono',monospace; font-size:0.72rem; color:var(--text2); margin-bottom:12px; letter-spacing:0.5px;"></div>
           <button class="voucher-copy-btn" onclick="copyVoucher()">📋 COPY CODE</button>
           <div style="margin-top:12px; font-size:0.78rem; color:var(--text2); text-align:center;">
   Need help? Call <strong id="support-phone-display-4"></strong>
