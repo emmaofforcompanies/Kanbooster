@@ -977,6 +977,7 @@ function saveVoucherLocally(code) {
 function showVoucher(code, productName) {
   document.getElementById('voucher-display').textContent = code;
   document.getElementById('voucher-product-name').textContent = productName || selectedProduct?.name || '';
+  document.getElementById('voucher-site-display').textContent = currentSite ? `Site: ${currentSite}` : '';
   showPage('page-4');
   setStep(4);
   document.getElementById('step-4').classList.add('done');
