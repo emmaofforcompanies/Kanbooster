@@ -1162,8 +1162,7 @@ app.post('/api/retrieve-voucher', async (req, res) => {
     if (!isValidPhone(phone)) return res.status(400).json({ error: 'Invalid phone' });
     if (!deviceId) return res.status(400).json({ error: 'Missing device ID' });
 
-    // Get Max_no_id window from settings (default 15 mins)
-    const cutoff = new Date(Date.now() - 15 * 60 * 1000).toISOString(); // 15 mins only
+    const cutoff = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString(); // 30 days
     const pendingCutoff = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString(); // 24hrs — pending FLW check
 
     // First check for already-completed transactions
