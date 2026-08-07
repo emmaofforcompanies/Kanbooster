@@ -1013,7 +1013,7 @@ async function retrieveCode() {
       if (result.device_mismatch) {
         resultDiv.innerHTML = `<div class="card"><div class="alert alert-warning">🔒 Security check failed. Vouchers can only be retrieved from the <strong>same device</strong> used during purchase.<br><br>Contact support: <strong>${settings.support_phone || ''}</strong></div></div>`;
       } else {
-        resultDiv.innerHTML = `<div class="card"><div class="alert alert-warning">❌ No vouchers found for this number in the last 15 mins of delivery from this device.<br><br>Contact support: <strong>${settings.support_phone || ''}</strong></div></div>`;
+        resultDiv.innerHTML = `<div class="card"><div class="alert alert-warning">❌ No vouchers found for this number in the last 30 days of delivery from this device.<br><br>Contact support: <strong>${settings.support_phone || ''}</strong></div></div>`;
       }
       return;
     }
