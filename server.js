@@ -1190,6 +1190,21 @@ app.post('/api/retrieve-voucher', async (req, res) => {
         let paid = txn.status === 'confirmed'; // payment already verified, just needs a voucher
         let ref  = txn.flw_ref || '';
 
+        // Claim this transaction so admin poll / another retrieve request can't
+        // double-verify and double-assign it at the same time.
+        const claimed = await claimTransactionForVerification(txn.payment_code, txn.status);
+        if (!claimed) {
+          // Someone else (e.g. admin poll) is already handling this one —
+          // check if they already finished it a moment ago.
+          const { data: fresh } = await supabase.from('web_transactions')
+            .select('status, voucher_code').eq('payment_code', txn.payment_code).single();
+          if (fresh?.status === 'completed' && fresh.voucher_code) {
+            if (!data) data = [];
+            data.push({ ...txn, voucher_code: fresh.voucher_code, status: 'completed' });
+          }
+          continue;
+        }
+
         // Check Flutterwave first
         try {
           const flwSearch = await new Promise((resolve, reject) => {
@@ -1256,7 +1271,11 @@ app.post('/api/retrieve-voucher', async (req, res) => {
             }).eq('payment_code', txn.payment_code);
             if (!data) data = [];
             data.push({ ...txn, voucher_code: voucherCode, status: 'completed' });
+          } else {
+            await releaseTransactionClaim(txn.payment_code, txn.status);
           }
+        } else {
+          await releaseTransactionClaim(txn.payment_code, txn.status);
         }
       }
     }
@@ -1741,9 +1760,151 @@ app.post('/api/admin/deliver', verifyAdmin, async (req, res) => {
 });
 
 
+// Poll all pending/confirmed transactions for a phone number in a date range,
+// verify each against Flutterwave then Paystack, and auto-deliver if paid.
+app.post('/api/admin/poll-payments', verifyAdmin, async (req, res) => {
+  try {
+    const phone = sanitizeString(req.body.phone || '', 15);
+    const fromDate = req.body.from_date;
+    const toDate = req.body.to_date;
+
+    if (!isValidPhone(phone)) return res.status(400).json({ error: 'Invalid phone' });
+    if (!fromDate || !toDate) return res.status(400).json({ error: 'Date range required' });
+
+    const fromIso = new Date(fromDate + 'T00:00:00').toISOString();
+    const toIso = new Date(toDate + 'T23:59:59').toISOString();
+
+    const { data: pending } = await supabase.from('web_transactions')
+      .select('*')
+      .eq('phone', phone)
+      .in('status', ['pending', 'confirmed'])
+      .gte('timestamp', fromIso)
+      .lte('timestamp', toIso)
+      .order('timestamp', { ascending: false });
+
+    if (!pending || pending.length === 0) {
+      return res.json({ results: [] });
+    }
+
+    const https = require('https');
+    const results = [];
+
+    for (const txn of pending) {
+      // Claim first — if a customer's own retrieve-code hits this same
+      // transaction at the same moment, only one of us proceeds.
+      const claimed = await claimTransactionForVerification(txn.payment_code, txn.status);
+      if (!claimed) {
+        results.push({ payment_code: txn.payment_code, amount: txn.amount, timestamp: txn.timestamp, outcome: 'skipped_in_progress' });
+        continue;
+      }
+
+      let paid = false;
+      let ref = txn.flw_ref || '';
+
+      try {
+        const flwSearch = await new Promise((resolve, reject) => {
+          const options = {
+            hostname: 'api.flutterwave.com',
+            path: `/v3/transactions?tx_ref=${encodeURIComponent(txn.payment_code)}`,
+            method: 'GET',
+            headers: { 'Authorization': `Bearer ${process.env.FLW_SECRET_KEY}` },
+          };
+          const r = https.request(options, (response) => {
+            let d = '';
+            response.on('data', chunk => d += chunk);
+            response.on('end', () => { try { resolve(JSON.parse(d)); } catch(e) { reject(e); } });
+          });
+          r.on('error', reject);
+          r.end();
+        });
+        const flwTxn = flwSearch?.data?.[0];
+        if (flwTxn && flwTxn.status === 'successful') {
+          paid = true;
+          ref = flwTxn.flw_ref || '';
+        }
+      } catch(e) {
+        console.error('admin poll: FLW check error:', e.message);
+      }
+
+      if (!paid) {
+        try {
+          const pstkVerify = await new Promise((resolve, reject) => {
+            const options = {
+              hostname: 'api.paystack.co',
+              path: `/transaction/verify/${encodeURIComponent(txn.payment_code)}`,
+              method: 'GET',
+              headers: { 'Authorization': `Bearer ${process.env.PAYSTACK_SECRET_KEY}` },
+            };
+            const r = https.request(options, (response) => {
+              let d = '';
+              response.on('data', chunk => d += chunk);
+              response.on('end', () => { try { resolve(JSON.parse(d)); } catch(e) { reject(e); } });
+            });
+            r.on('error', reject);
+            r.end();
+          });
+          if (pstkVerify?.data?.status === 'success') {
+            paid = true;
+            ref = String(pstkVerify.data.id || '');
+          }
+        } catch(e) {
+          console.error('admin poll: Paystack check error:', e.message);
+        }
+      }
+
+      if (paid) {
+        const voucherCode = await assignVoucher(txn.product_id, txn.site_name);
+        if (voucherCode) {
+          await supabase.from('web_transactions').update({
+            status: 'completed',
+            voucher_code: voucherCode,
+            sent: 'delivered',
+            delivery_method: 'admin_poll',
+            flw_ref: ref,
+            delivered_at: new Date().toISOString(),
+          }).eq('payment_code', txn.payment_code);
+          results.push({ payment_code: txn.payment_code, amount: txn.amount, timestamp: txn.timestamp, site_name: txn.site_name, voucher_code: voucherCode, outcome: 'delivered' });
+        } else {
+          await releaseTransactionClaim(txn.payment_code, txn.status);
+          results.push({ payment_code: txn.payment_code, amount: txn.amount, timestamp: txn.timestamp, outcome: 'out_of_stock' });
+        }
+      } else {
+        await releaseTransactionClaim(txn.payment_code, txn.status);
+        results.push({ payment_code: txn.payment_code, amount: txn.amount, timestamp: txn.timestamp, outcome: 'not_found' });
+      }
+    }
+
+    res.json({ results });
+  } catch(e) {
+    console.error('admin poll-payments error:', e);
+    res.status(500).json({ error: e.message });
+  }
+});
+
 // ============================================
 // VOUCHER ASSIGNMENT (server-side)
 // ============================================
+
+// Atomically claim a pending/confirmed transaction so only one process
+// (retrieve-voucher, admin poll, etc.) can verify+deliver it at a time.
+async function claimTransactionForVerification(paymentCode, currentStatus) {
+  const { data } = await supabase.from('web_transactions')
+    .update({ status: 'verifying' })
+    .eq('payment_code', paymentCode)
+    .eq('status', currentStatus)
+    .select();
+  return data && data.length > 0;
+}
+
+// Release a claim back to its original status if verification found nothing.
+async function releaseTransactionClaim(paymentCode, revertStatus) {
+  await supabase.from('web_transactions')
+    .update({ status: revertStatus })
+    .eq('payment_code', paymentCode)
+    .eq('status', 'verifying');
+}
+
+
 async function assignVoucher(productId, siteName) {
   const siteClean = String(siteName || '').replace(/\s+/g, '').toLowerCase();
 
