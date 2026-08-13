@@ -790,11 +790,9 @@ async function loadDashboard() {
         const s = (t.site_name || 'unknown').toLowerCase();
         if (!siteMap[s]) siteMap[s] = { count: 0, revenue: 0 };
         siteMap[s].count++; siteMap[s].revenue += amt;
-        const l = (t.lodge_name || '').toLowerCase();
-        if (l) {
-          if (!lodgeMap[l]) lodgeMap[l] = { lodge: t.lodge_name, site: t.site_name, count: 0, revenue: 0 };
-          lodgeMap[l].count++; lodgeMap[l].revenue += amt;
-        }
+        const l = (t.lodge_name || '').toLowerCase() || '(no lodge)';
+        if (!lodgeMap[l]) lodgeMap[l] = { lodge: t.lodge_name || '(No Lodge / Walk-in)', site: t.site_name, count: 0, revenue: 0 };
+        lodgeMap[l].count++; lodgeMap[l].revenue += amt;
       }
       if (['pending','confirmed'].includes(t.status)) pending++;
       if (['underpaid','overpaid','out_of_stock'].includes(t.status)) issues++;
