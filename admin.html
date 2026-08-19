@@ -180,6 +180,9 @@
   <button class="btn btn-primary" onclick="loadDashboard()">Load</button>
   <button class="btn btn-secondary" onclick="setDashToday()">Today</button>
   <button class="btn btn-secondary" onclick="setDashYesterday()">Yesterday</button>
+  <button class="btn btn-secondary" onclick="setDashLast7Days()">Last 7 Days</button>
+  <button class="btn btn-secondary" onclick="setDashThisMonth()">This Month</button>
+  <button class="btn btn-secondary" onclick="setDashLastMonth()">Last Month</button>
 </div>
         <div class="stats-grid">
           <div class="stat-card green"><div class="stat-label">Total Revenue</div><div class="stat-value" id="stat-revenue">—</div><div class="stat-sub">completed sales</div></div>
@@ -763,6 +766,31 @@ function setDashYesterday() {
   const yd = d.toISOString().split('T')[0];
   document.getElementById('dash-from').value = yd;
   document.getElementById('dash-to').value = yd;
+  loadDashboard();
+}
+
+function setDashLast7Days() {
+  const to = new Date();
+  const from = new Date(); from.setDate(from.getDate() - 6); // includes today = 7 days total
+  document.getElementById('dash-from').value = from.toISOString().split('T')[0];
+  document.getElementById('dash-to').value = to.toISOString().split('T')[0];
+  loadDashboard();
+}
+
+function setDashThisMonth() {
+  const now = new Date();
+  const from = new Date(now.getFullYear(), now.getMonth(), 1);
+  document.getElementById('dash-from').value = from.toISOString().split('T')[0];
+  document.getElementById('dash-to').value = now.toISOString().split('T')[0];
+  loadDashboard();
+}
+
+function setDashLastMonth() {
+  const now = new Date();
+  const from = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+  const to = new Date(now.getFullYear(), now.getMonth(), 0); // day 0 of this month = last day of prev month
+  document.getElementById('dash-from').value = from.toISOString().split('T')[0];
+  document.getElementById('dash-to').value = to.toISOString().split('T')[0];
   loadDashboard();
 }
 
