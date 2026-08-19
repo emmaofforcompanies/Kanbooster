@@ -754,8 +754,15 @@ function showSection(name) {
 // ============================================
 // DASHBOARD
 // ============================================
+function toLocalYMD(d) {
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, '0');
+  const day = String(d.getDate()).padStart(2, '0');
+  return `${y}-${m}-${day}`;
+}
+
 function setDashToday() {
-  const today = new Date().toISOString().split('T')[0];
+  const today = toLocalYMD(new Date());
   document.getElementById('dash-from').value = today;
   document.getElementById('dash-to').value = today;
   loadDashboard();
@@ -763,7 +770,7 @@ function setDashToday() {
 
 function setDashYesterday() {
   const d = new Date(); d.setDate(d.getDate() - 1);
-  const yd = d.toISOString().split('T')[0];
+  const yd = toLocalYMD(d);
   document.getElementById('dash-from').value = yd;
   document.getElementById('dash-to').value = yd;
   loadDashboard();
@@ -772,16 +779,16 @@ function setDashYesterday() {
 function setDashLast7Days() {
   const to = new Date();
   const from = new Date(); from.setDate(from.getDate() - 6); // includes today = 7 days total
-  document.getElementById('dash-from').value = from.toISOString().split('T')[0];
-  document.getElementById('dash-to').value = to.toISOString().split('T')[0];
+  document.getElementById('dash-from').value = toLocalYMD(from);
+  document.getElementById('dash-to').value = toLocalYMD(to);
   loadDashboard();
 }
 
 function setDashThisMonth() {
   const now = new Date();
   const from = new Date(now.getFullYear(), now.getMonth(), 1);
-  document.getElementById('dash-from').value = from.toISOString().split('T')[0];
-  document.getElementById('dash-to').value = now.toISOString().split('T')[0];
+  document.getElementById('dash-from').value = toLocalYMD(from);
+  document.getElementById('dash-to').value = toLocalYMD(now);
   loadDashboard();
 }
 
@@ -789,8 +796,8 @@ function setDashLastMonth() {
   const now = new Date();
   const from = new Date(now.getFullYear(), now.getMonth() - 1, 1);
   const to = new Date(now.getFullYear(), now.getMonth(), 0); // day 0 of this month = last day of prev month
-  document.getElementById('dash-from').value = from.toISOString().split('T')[0];
-  document.getElementById('dash-to').value = to.toISOString().split('T')[0];
+  document.getElementById('dash-from').value = toLocalYMD(from);
+  document.getElementById('dash-to').value = toLocalYMD(to);
   loadDashboard();
 }
 
