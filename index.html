@@ -612,7 +612,7 @@ async function loadFaqs() {
       return;
     }
 
-    listEl.innerHTML = faqs.map((f, i) => `
+        listEl.innerHTML = faqs.map((f, i) => `
       <div class="faq-item" style="border-bottom:1px solid var(--border); padding:12px 0;">
         <div onclick="toggleFaq(${i})" style="display:flex; justify-content:space-between; align-items:center; cursor:pointer;">
           <span style="font-weight:600; font-size:0.88rem;">${f.faq}</span>
@@ -623,6 +623,10 @@ async function loadFaqs() {
           ${f.link ? `<div style="margin-top:8px;"><a href="${f.link}" target="_blank" rel="noopener" style="color:var(--accent);">📺 Watch / View →</a></div>` : ''}
         </div>
       </div>`).join('');
+    const faqRetrieve = document.getElementById('faq-list-retrieve');
+    const faqBalance = document.getElementById('faq-list-balance');
+    if (faqRetrieve) { faqRetrieve.innerHTML = listEl.innerHTML; document.getElementById('faq-loading-retrieve').style.display = 'none'; }
+    if (faqBalance) { faqBalance.innerHTML = listEl.innerHTML; document.getElementById('faq-loading-balance').style.display = 'none'; }
   } catch(e) {
     loadingEl.textContent = 'Could not load FAQs.';
   }
