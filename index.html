@@ -274,7 +274,6 @@
       </div>
   </div>
 
-<div id="how-it-works-faq-cards">
 <div class="card">
   <div class="card-title">ℹ️ How It Works</div>
   <ol class="instructions">
@@ -292,7 +291,6 @@
     <span class="flicker">Loading FAQs...</span>
   </div>
   <div id="faq-list"></div>
-</div>
 </div>
     <!-- Page 2: Phone + Site -->
     <div id="page-2" class="page">
@@ -1114,16 +1112,13 @@ function switchTab(tab) {
   if (tab === 'buy') {
     document.querySelectorAll('.tab')[0].classList.add('active');
     document.getElementById('tab-buy').classList.add('active');
-    document.getElementById('tab-buy').appendChild(document.getElementById('how-it-works-faq-cards'));
   } else if (tab === 'retrieve') {
     document.querySelectorAll('.tab')[1].classList.add('active');
     document.getElementById('tab-retrieve').classList.add('active');
-    document.getElementById('tab-retrieve').appendChild(document.getElementById('how-it-works-faq-cards'));
     document.getElementById('retrieve-result').style.display = 'none';
   } else if (tab === 'balance') {
     document.querySelectorAll('.tab')[2].classList.add('active');
     document.getElementById('tab-balance').classList.add('active');
-    document.getElementById('tab-balance').appendChild(document.getElementById('how-it-works-faq-cards'));
     document.getElementById('balance-result').style.display = 'none';
   }
 }
