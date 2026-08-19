@@ -274,6 +274,7 @@
       </div>
   </div>
 
+<div id="how-it-works-faq-cards">
 <div class="card">
   <div class="card-title">ℹ️ How It Works</div>
   <ol class="instructions">
@@ -291,6 +292,7 @@
     <span class="flicker">Loading FAQs...</span>
   </div>
   <div id="faq-list"></div>
+</div>
 </div>
     <!-- Page 2: Phone + Site -->
     <div id="page-2" class="page">
@@ -612,7 +614,7 @@ async function loadFaqs() {
       return;
     }
 
-        listEl.innerHTML = faqs.map((f, i) => `
+    listEl.innerHTML = faqs.map((f, i) => `
       <div class="faq-item" style="border-bottom:1px solid var(--border); padding:12px 0;">
         <div onclick="toggleFaq(${i})" style="display:flex; justify-content:space-between; align-items:center; cursor:pointer;">
           <span style="font-weight:600; font-size:0.88rem;">${f.faq}</span>
@@ -623,10 +625,6 @@ async function loadFaqs() {
           ${f.link ? `<div style="margin-top:8px;"><a href="${f.link}" target="_blank" rel="noopener" style="color:var(--accent);">📺 Watch / View →</a></div>` : ''}
         </div>
       </div>`).join('');
-    const faqRetrieve = document.getElementById('faq-list-retrieve');
-    const faqBalance = document.getElementById('faq-list-balance');
-    if (faqRetrieve) { faqRetrieve.innerHTML = listEl.innerHTML; document.getElementById('faq-loading-retrieve').style.display = 'none'; }
-    if (faqBalance) { faqBalance.innerHTML = listEl.innerHTML; document.getElementById('faq-loading-balance').style.display = 'none'; }
   } catch(e) {
     loadingEl.textContent = 'Could not load FAQs.';
   }
@@ -1116,13 +1114,16 @@ function switchTab(tab) {
   if (tab === 'buy') {
     document.querySelectorAll('.tab')[0].classList.add('active');
     document.getElementById('tab-buy').classList.add('active');
+    document.getElementById('tab-buy').appendChild(document.getElementById('how-it-works-faq-cards'));
   } else if (tab === 'retrieve') {
     document.querySelectorAll('.tab')[1].classList.add('active');
     document.getElementById('tab-retrieve').classList.add('active');
+    document.getElementById('tab-retrieve').appendChild(document.getElementById('how-it-works-faq-cards'));
     document.getElementById('retrieve-result').style.display = 'none';
   } else if (tab === 'balance') {
     document.querySelectorAll('.tab')[2].classList.add('active');
     document.getElementById('tab-balance').classList.add('active');
+    document.getElementById('tab-balance').appendChild(document.getElementById('how-it-works-faq-cards'));
     document.getElementById('balance-result').style.display = 'none';
   }
 }
