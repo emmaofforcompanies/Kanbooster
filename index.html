@@ -503,16 +503,16 @@
     </div>
   </div>
 
-     <!-- RETRIEVE FLOW -->
+  <!-- RETRIEVE FLOW -->
   <div id="tab-retrieve" class="page">
     <div class="card">
       <div class="card-title">🔍 Retrieve Your Code</div>
+      <div class="alert alert-info">
+        You can retrieve vouchers purchased within the last <strong>30 days</strong> — but only using the <strong>same phone number and the same browser/device</strong> you originally purchased with.
+      </div>
       <label>Phone Number Used During Purchase</label>
       <input type="tel" id="retrieve-phone" placeholder="e.g. 08012345678" maxlength="14" autocomplete="tel" autocorrect="off">
       <button class="btn btn-primary" onclick="retrieveCode()">Find My Voucher →</button>
-      <div class="alert alert-info" style="margin-top:12px; margin-bottom:0;">
-        You can retrieve vouchers purchased within the last <strong>30 days</strong> — but only using the <strong>same phone number and the same browser/device</strong> you originally purchased with.
-      </div>
     </div>
     <div id="retrieve-result" style="display:none;"></div>
   </div>
@@ -520,15 +520,15 @@
   <div id="tab-balance" class="page">
     <div class="card">
       <div class="card-title">📊 Check Balance</div>
+      <div class="alert alert-info">
+        Make sure you're connected to KanBooster WiFi, then enter your site name and voucher code.
+      </div>
       <label>Site Name</label>
       <input type="text" id="balance-site-name" placeholder="Enter the site name you connected to" maxlength="50" autocomplete="off" autocorrect="off">
       <label>Voucher Code</label>
       <input type="text" id="balance-voucher-code" placeholder="Enter voucher code" maxlength="20" style="letter-spacing:1px;" autocomplete="off" autocorrect="off">
       <button class="btn btn-primary" onclick="checkBalance()">Check Balance →</button>
       <button class="btn btn-secondary" onclick="showBalanceLog()">Log out</button>
-      <div class="alert alert-info" style="margin-top:12px; margin-bottom:0;">
-        Make sure you're connected to KanBooster WiFi, then enter your site name and voucher code.
-      </div>
     </div>
     <div id="balance-result" style="display:none;"></div>
   </div>
