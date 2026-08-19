@@ -514,7 +514,22 @@
         You can retrieve vouchers purchased within the last <strong>30 days</strong> — but only using the <strong>same phone number and the same browser/device</strong> you originally purchased with.
       </div>
     </div>
-    <div id="retrieve-result" style="display:none;"></div>
+        <div id="retrieve-result" style="display:none;"></div>
+    <div class="card">
+      <div class="card-title">ℹ️ How It Works</div>
+      <ol class="instructions">
+        <li>Input your site name and select your preferred WiFi plan</li>
+        <li>Enter your phone number and lodge name</li>
+        <li>Complete payment to the bank account provided</li>
+        <li>Click on "I have paid - Check now" to get your voucher code</li>
+        <li>Select the Kanbooster Wifi, click on sign in and input the voucher code to connect to the wifi</li>
+      </ol>
+    </div>
+    <div class="card">
+      <div class="card-title">❓ Frequently Asked Questions</div>
+      <div id="faq-loading-retrieve" style="text-align:center; color:var(--text2); padding:12px 0; font-size:0.85rem;"><span class="flicker">Loading FAQs...</span></div>
+      <div id="faq-list-retrieve"></div>
+    </div>
   </div>
 
   <div id="tab-balance" class="page">
@@ -530,7 +545,22 @@
         Make sure you're connected to KanBooster WiFi, then enter your site name and voucher code.
       </div>
     </div>
-    <div id="balance-result" style="display:none;"></div>
+        <div id="balance-result" style="display:none;"></div>
+    <div class="card">
+      <div class="card-title">ℹ️ How It Works</div>
+      <ol class="instructions">
+        <li>Input your site name and select your preferred WiFi plan</li>
+        <li>Enter your phone number and lodge name</li>
+        <li>Complete payment to the bank account provided</li>
+        <li>Click on "I have paid - Check now" to get your voucher code</li>
+        <li>Select the Kanbooster Wifi, click on sign in and input the voucher code to connect to the wifi</li>
+      </ol>
+    </div>
+    <div class="card">
+      <div class="card-title">❓ Frequently Asked Questions</div>
+      <div id="faq-loading-balance" style="text-align:center; color:var(--text2); padding:12px 0; font-size:0.85rem;"><span class="flicker">Loading FAQs...</span></div>
+      <div id="faq-list-balance"></div>
+    </div>
   </div>
 
   <div class="footer">
@@ -624,6 +654,10 @@ async function loadFaqs() {
         </div>
       </div>`).join('');
   } catch(e) {
+    document.getElementById('faq-list-retrieve').innerHTML = listEl.innerHTML;
+    document.getElementById('faq-list-balance').innerHTML = listEl.innerHTML;
+    document.getElementById('faq-loading-retrieve').style.display = 'none';
+    document.getElementById('faq-loading-balance').style.display = 'none';
     loadingEl.textContent = 'Could not load FAQs.';
   }
 }
