@@ -171,6 +171,20 @@ function isValidIdentifier(code) {
 // PUBLIC API ROUTES
 // ============================================
 
+
+app.get('/api/faqs', async (req, res) => {
+  try {
+    const { data, error } = await supabase.from('faqs')
+      .select('s_n, faq, answer, link')
+      .order('s_n', { ascending: true });
+    if (error) throw error;
+    res.json({ faqs: data || [] });
+  } catch(e) {
+    res.status(500).json({ faqs: [] });
+  }
+});
+
+
 // Get active products + site prices
 app.get('/api/products', async (req, res) => {
   try {
