@@ -255,6 +255,16 @@
   Need help? call <strong id="support-phone-display-1"></strong>
 </div>
 </div>
+    <div class="card" id="how-it-works-card">
+    <div class="card-title">ℹ️ How It Works</div>
+    <ol class="instructions">
+      <li>Select your preferred WiFi plan</li>
+      <li>Enter your phone number and site name</li>
+      <li>Complete payment — all fields auto-filled</li>
+      <li>Your voucher code appears instantly on screen</li>
+    </ol>
+  </div>
+
   <div id="products-section" style="display:none;">
     <div class="card">
       <div class="card-title">📶 Select Your Plan</div>
@@ -267,17 +277,6 @@
         </div>
         <button class="btn btn-primary" id="btn-select-product" onclick="goToPage2()" disabled>Continue →</button>
       </div>
-      <div class="card">
-        <div class="card-title">ℹ️ How It Works</div>
-        <ol class="instructions">
-          <li>Select your preferred WiFi plan</li>
-          <li>Enter your phone number and site name</li>
-          <li>Complete payment — all fields auto-filled</li>
-          <li>Your voucher code appears instantly on screen</li>
-        </ol>
-      </div>
-
-
     
       </div>
   </div>
@@ -635,6 +634,7 @@ async function onSiteSubmit() {
     document.querySelectorAll('.product-card').forEach(c => c.classList.remove('selected'));
     document.getElementById('products-section').style.display = 'block';
 document.getElementById('site-input-card').style.display = 'none';
+document.getElementById('how-it-works-card').style.display = 'none';
 loadProducts(raw.replace(/\s+/g, ''));
   } catch(e) {
     hideLoading();
@@ -1219,6 +1219,7 @@ function resetBuy() {
 document.getElementById('site-error').style.display = 'none';
 document.getElementById('products-section').style.display = 'none';
 document.getElementById('site-input-card').style.display = 'block';
+document.getElementById('how-it-works-card').style.display = 'block';
   goToPage1();
 }
 
