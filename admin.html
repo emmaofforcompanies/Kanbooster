@@ -671,11 +671,10 @@ let selectedRegisterPhones = new Set();
 async function loadCustomerRegister() {
   selectedRegisterPhones.clear();
   updateBulkLodgeBar();
+  const { customers } = await apiGet('/api/admin/customer-register');
   const tbody = document.getElementById('register-body');
-  try {
-    const { customers } = await apiGet('/api/admin/customer-register');
-    if (!customers.length) { tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;">No customers</td></tr>'; return; }
-    tbody.innerHTML = customers.map(c => `<tr>
+  if (!customers.length) { tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;">No customers</td></tr>'; return; }
+  tbody.innerHTML = customers.map(c => `<tr>
     <td><input type="checkbox" class="register-row-check" value="${c.phone}" onchange="toggleRegisterRow('${c.phone}', this.checked)"></td>
     <td>${c.phone}</td>
     <td>${c.site_name||''}</td>
@@ -727,8 +726,8 @@ async function bulkAssignLodge() {
     showToast(`✅ Updated ${result.updated} customers`, 'success');
     clearRegisterSelection();
     loadCustomerRegister();
-    } catch(e) {
-    tbody.innerHTML = `<tr><td colspan="6" style="color:var(--danger); text-align:center;">Error: ${e.message}</td></tr>`;
+  } catch(e) {
+    showToast(`❌ ${e.message}`, 'error');
   }
 }
       
