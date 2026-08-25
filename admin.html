@@ -671,28 +671,19 @@ let selectedRegisterPhones = new Set();
 async function loadCustomerRegister() {
   selectedRegisterPhones.clear();
   updateBulkLodgeBar();
+  const { customers } = await apiGet('/api/admin/customer-register');
   const tbody = document.getElementById('register-body');
-  try {
-    const { customers } = await apiGet('/api/admin/customer-register');
-    if (!customers.length) {
-      tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;">No customers</td></tr>';
-      return;
-    }
-    const sorted = [...customers].sort((a, b) =>
-      new Date(b.created_at || b.updated_at) - new Date(a.created_at || a.updated_at)
-    );
-    tbody.innerHTML = sorted.map(c => `<tr>
-      <td><input type="checkbox" class="register-row-check" value="${c.phone}" onchange="toggleRegisterRow('${c.phone}', this.checked)"></td>
-      <td>${c.phone}</td>
-      <td>${c.site_name||''}</td>
-      <td>${c.lodge_name||''}</td>
-      <td>${c.source}</td>
-      <td>${new Date(c.updated_at||c.created_at).toLocaleString()}</td>
-    </tr>`).join('');
-  } catch(e) {
-    tbody.innerHTML = `<tr><td colspan="6" style="color:var(--danger); text-align:center;">Error: ${e.message}</td></tr>`;
-  }
+  if (!customers.length) { tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;">No customers</td></tr>'; return; }
+  tbody.innerHTML = customers.map(c => `<tr>
+    <td><input type="checkbox" class="register-row-check" value="${c.phone}" onchange="toggleRegisterRow('${c.phone}', this.checked)"></td>
+    <td>${c.phone}</td>
+    <td>${c.site_name||''}</td>
+    <td>${c.lodge_name||''}</td>
+    <td>${c.source}</td>
+    <td>${new Date(c.updated_at||c.created_at).toLocaleString()}</td>
+  </tr>`).join('');
 }
+
 function toggleSelectAllRegister(checkbox) {
   document.querySelectorAll('.register-row-check').forEach(cb => {
     cb.checked = checkbox.checked;
