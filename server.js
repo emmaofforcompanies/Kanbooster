@@ -412,9 +412,9 @@ app.post('/api/register-customer', purchaseLimiter, async (req, res) => {
     if (!lodgeName) return res.status(400).json({ error: 'Lodge name required' });
 
     await supabase.from('customer_register').upsert({
-      phone, site_name: siteName, lodge_name: lodgeName,
-      source: 'auto', updated_at: new Date().toISOString(),
-    }, { onConflict: 'phone' });
+  phone, site_name: siteName, lodge_name: lodgeName,
+  source: 'auto', updated_at: new Date().toISOString(),
+}, { onConflict: 'phone' });
 
     res.json({ success: true });
   } catch(e) {
@@ -1004,7 +1004,7 @@ app.post('/api/verify-paystack', purchaseLimiter, async (req, res) => {
 app.get('/api/admin/customer-register', verifyAdmin, async (req, res) => {
   try {
     const { data, error } = await supabase
-      .from('customer_register').select('*').order('created_at', { ascending: false }).limit(500);
+      .from('customer_register').select('*').order('updated_at', { ascending: false }).limit(500);
     if (error) throw error;
     res.json({ customers: data || [] });
   } catch(e) {
