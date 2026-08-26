@@ -1457,10 +1457,20 @@ app.get('/api/admin/transactions', verifyAdmin, async (req, res) => {
 app.get('/api/admin/stats', verifyAdmin, async (req, res) => {
   try {
     const { from, to } = req.query;
-    let query = supabase.from('web_transactions').select('status, amount, site_name, phone');
-    if (from) query = query.gte('timestamp', from + 'T00:00:00');
-    if (to) query = query.lte('timestamp', to + 'T23:59:59');
-    const { data } = await query;
+    let data = [];
+    let batchFrom = 0;
+    const batchSize = 1000;
+    while (true) {
+      let query = supabase.from('web_transactions').select('status, amount, site_name, phone')
+        .range(batchFrom, batchFrom + batchSize - 1);
+      if (from) query = query.gte('timestamp', from + 'T00:00:00');
+      if (to) query = query.lte('timestamp', to + 'T23:59:59');
+      const { data: batch, error: batchError } = await query;
+      if (batchError) throw batchError;
+      data = data.concat(batch || []);
+      if (!batch || batch.length < batchSize) break;
+      batchFrom += batchSize;
+    }
 
     // Enrich with lodge_name from customer_register
     const phones = [...new Set((data || []).map(t => t.phone).filter(Boolean))];
