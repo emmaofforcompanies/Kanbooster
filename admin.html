@@ -168,8 +168,15 @@
     <div class="main-content">
 
       <!-- DASHBOARD -->
-      <div class="section active" id="section-dashboard">
+            <div class="section active" id="section-dashboard">
         <div class="section-title">Dashboard</div>
+        <div class="card" id="low-stock-alert-card" style="display:none; border-color:var(--danger);">
+          <div class="card-title">⚠️ Low Stock Alert</div>
+          <div class="table-wrap">
+            <table><thead><tr><th>Product</th><th>Site</th><th>Available</th></tr></thead>
+            <tbody id="low-stock-alert-body"></tbody></table>
+          </div>
+        </div>
         <div class="filters">
   <input type="date" class="filter-input" id="dash-from">
   <input type="date" class="filter-input" id="dash-to">
@@ -572,6 +579,7 @@ async function doLogin() {
     document.getElementById('login-screen').style.display = 'none';
     document.getElementById('admin-screen').style.display = 'block';
     loadDashboard();
+    loadLowStockAlert();
     loadProductsTable();
     loadSettings();
     populateManualProducts();
@@ -614,6 +622,7 @@ window.onload = () => {
     document.getElementById('login-screen').style.display = 'none';
     document.getElementById('admin-screen').style.display = 'block';
     loadDashboard();
+    loadLowStockAlert();
     loadProductsTable();
     loadSettings();
     populateManualProducts();
@@ -801,6 +810,38 @@ function setDashLastMonth() {
   loadDashboard();
 }
 
+
+async function loadLowStockAlert() {
+  const card = document.getElementById('low-stock-alert-card');
+  const body = document.getElementById('low-stock-alert-body');
+  try {
+    const [{ stock }, { data: settings }] = await Promise.all([
+      apiGet('/api/admin/stock'),
+      apiGet('/api/admin/settings')
+    ]);
+    const thresholdSetting = (settings || []).find(s => s.setting_name === 'low_stock_threshold');
+    const threshold = parseInt(thresholdSetting?.setting_value, 10) || 5;
+
+    const lowItems = (stock || []).filter(s => s.unused <= threshold);
+
+    if (lowItems.length === 0) {
+      card.style.display = 'none';
+      return;
+    }
+
+    card.style.display = 'block';
+    body.innerHTML = lowItems
+      .sort((a, b) => a.unused - b.unused)
+      .map(s => `<tr>
+        <td>${s.product_name}</td>
+        <td>${s.site}</td>
+        <td style="color:var(--danger); font-family:'JetBrains Mono',monospace; font-weight:600;">${s.unused}</td>
+      </tr>`).join('');
+  } catch(e) {
+    card.style.display = 'none';
+  }
+}
+  
 async function loadDashboard() {
   const from  = document.getElementById('dash-from').value;
   const to    = document.getElementById('dash-to').value;
