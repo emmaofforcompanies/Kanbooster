@@ -1644,17 +1644,24 @@ app.get('/api/admin/pending', verifyAdmin, async (req, res) => {
 app.get('/api/admin/customer-ranking', verifyAdmin, async (req, res) => {
   try {
     const { from, to, site } = req.query;
-    let query = supabase
-      .from('web_transactions')
-      .select('phone, amount, site_name, timestamp')
-      .eq('status', 'completed');
-    if (from) query = query.gte('timestamp', from + 'T00:00:00');
-    if (to)   query = query.lte('timestamp', to + 'T23:59:59');
-    if (site) query = query.ilike('site_name', site);
-
-    const { data, error } = await query;
-    if (error) throw error;
-
+    let data = [];
+    let batchFrom = 0;
+    const batchSize = 1000;
+    while (true) {
+      let query = supabase
+        .from('web_transactions')
+        .select('phone, amount, site_name, timestamp')
+        .eq('status', 'completed')
+        .range(batchFrom, batchFrom + batchSize - 1);
+      if (from) query = query.gte('timestamp', from + 'T00:00:00');
+      if (to)   query = query.lte('timestamp', to + 'T23:59:59');
+      if (site) query = query.ilike('site_name', site);
+      const { data: batch, error: batchError } = await query;
+      if (batchError) throw batchError;
+      data = data.concat(batch || []);
+      if (!batch || batch.length < batchSize) break;
+      batchFrom += batchSize;
+    }
     // Aggregate by phone
     const map = {};
 for (const t of data || []) {
