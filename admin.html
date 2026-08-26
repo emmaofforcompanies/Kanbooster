@@ -815,14 +815,26 @@ async function loadLowStockAlert() {
   const card = document.getElementById('low-stock-alert-card');
   const body = document.getElementById('low-stock-alert-body');
   try {
-    const [{ stock }, { data: settings }] = await Promise.all([
+    const [{ stock }, { data: settings }, { products: siteProducts }] = await Promise.all([
       apiGet('/api/admin/stock'),
-      apiGet('/api/admin/settings')
+      apiGet('/api/admin/settings'),
+      apiGet('/api/admin/products')
     ]);
     const thresholdSetting = (settings || []).find(s => s.setting_name === 'low_stock_threshold');
     const threshold = parseInt(thresholdSetting?.setting_value, 10) || 5;
 
-    const lowItems = (stock || []).filter(s => s.unused <= threshold);
+    // Only consider product+site combos currently marked "active" —
+    // discontinued products should never trigger a low-stock alert
+    const activeKeys = new Set(
+      (siteProducts || [])
+        .filter(p => p.status === 'active')
+        .map(p => `${p.product_id}|${(p.site_name || '').toLowerCase().trim()}`)
+    );
+
+    const lowItems = (stock || []).filter(s => {
+      const key = `${s.product_id}|${(s.site || '').toLowerCase().trim()}`;
+      return activeKeys.has(key) && s.unused <= threshold;
+    });
 
     if (lowItems.length === 0) {
       card.style.display = 'none';
