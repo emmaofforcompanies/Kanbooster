@@ -1679,14 +1679,22 @@ app.get('/api/admin/new-customers', verifyAdmin, async (req, res) => {
     const { from, to, site } = req.query;
 
     // Get all completed transactions ever (to find each phone's first purchase)
-    let allQuery = supabase
-      .from('web_transactions')
-      .select('phone, site_name, timestamp, amount, product_id')
-      .eq('status', 'completed')
-      .order('timestamp', { ascending: true });
-
-    const { data: allData, error } = await allQuery;
-    if (error) throw error;
+    // Paginated because Supabase caps a single query at 1000 rows
+    let allData = [];
+    let batchFrom = 0;
+    const batchSize = 1000;
+    while (true) {
+      const { data: batch, error: batchError } = await supabase
+        .from('web_transactions')
+        .select('phone, site_name, timestamp, amount, product_id')
+        .eq('status', 'completed')
+        .order('timestamp', { ascending: true })
+        .range(batchFrom, batchFrom + batchSize - 1);
+      if (batchError) throw batchError;
+      allData = allData.concat(batch || []);
+      if (!batch || batch.length < batchSize) break;
+      batchFrom += batchSize;
+    }
 
     // Find first purchase date per phone
     const firstPurchase = {};
