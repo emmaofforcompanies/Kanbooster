@@ -142,6 +142,30 @@
     border: 1px solid rgba(251,191,36,0.2);
   }
 
+// ============================================
+// INIT
+// ============================================
+window.onload = async () => {
+  try {
+    settings = await apiGet('/api/public-settings');
+    const waitMins = parseInt(settings.auto_check_interval || '5') * 2;
+    const phone = settings.support_phone || '';
+    document.getElementById('support-phone-display').textContent = phone;
+    document.getElementById('support-phone-display-1').textContent = phone;
+    document.getElementById('support-phone-display-2').textContent = phone;
+    document.getElementById('support-phone-display-4').textContent = phone;
+    document.getElementById('support-wait-mins').textContent = waitMins;
+    if (settings.review_link) {
+      document.getElementById('review-link').href = settings.review_link;
+    }
+    if (settings.terms_link) {
+      document.getElementById('terms_link').href = settings.terms_link;
+    }
+        initTutorial();
+  } catch(e) {}
+  loadFaqs();
+};
+
 
 
 /* Tutorial banner (returning users) */
@@ -1281,32 +1305,6 @@ document.getElementById('how-it-works-card').style.display = 'block';
 document.getElementById('faq-card').style.display = 'block';
   goToPage1();
 }
-
-// ============================================
-// INIT
-// ============================================
-window.onload = async () => {
-  try {
-    settings = await apiGet('/api/public-settings');
-    const waitMins = parseInt(settings.auto_check_interval || '5') * 2;
-    const phone = settings.support_phone || '';
-    document.getElementById('support-phone-display').textContent = phone;
-    document.getElementById('support-phone-display-1').textContent = phone;
-    document.getElementById('support-phone-display-2').textContent = phone;
-    document.getElementById('support-phone-display-4').textContent = phone;
-    document.getElementById('support-wait-mins').textContent = waitMins;
-    if (settings.review_link) {
-      document.getElementById('review-link').href = settings.review_link;
-    }
-    if (settings.terms_link) {
-      document.getElementById('terms_link').href = settings.terms_link;
-    }
-        initTutorial();
-  } catch(e) {}
-  loadFaqs();
-};
-
-
 
 // ============================================
 // TUTORIAL
