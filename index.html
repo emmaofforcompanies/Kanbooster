@@ -159,7 +159,7 @@ window.onload = async () => {
       document.getElementById('review-link').href = settings.review_link;
     }
     if (settings.terms_link) {
-      document.getElementById('terms_link').href = settings.terms_link;
+      document.querySelectorAll('.terms-link').forEach(el => el.href = settings.terms_link);
     }
         initTutorial();
   } catch(e) {}
@@ -341,7 +341,7 @@ window.onload = async () => {
       <input type="checkbox" id="lodge-terms-checkbox" style="margin-top:3px;">
       <label for="lodge-terms-checkbox" style="font-weight:400; margin:0; color:var(--text2);">
         Please enter your lodge name and read our
-        <a id="terms_link" href="#" target="_blank" rel="noopener" style="color:var(--accent); font-weight:700; text-decoration:underline;">Terms and Conditions</a>
+        <a class="terms-link" href="#" target="_blank" rel="noopener" style="color:var(--accent); font-weight:700; text-decoration:underline;">Terms and Conditions</a>
       </label>
     </div>
     <button class="btn btn-primary" onclick="submitLodgeName()">I agree to terms - Continue →</button>
@@ -574,7 +574,7 @@ window.onload = async () => {
         07078582461
       </a>
       &nbsp;•&nbsp;
-      <a id="terms_link" href="#" target="_blank" rel="noopener" style="color:var(--text2); font-weight:700; text-decoration:underline;">
+      <a class="terms-link" href="#" target="_blank" rel="noopener" style="color:var(--text2); font-weight:700; text-decoration:underline;">
         Terms and Conditions
       </a>
     </div>
