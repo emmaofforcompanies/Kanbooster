@@ -313,14 +313,11 @@
     <div class="card-title">🏠 Lodge Name</div>
     <label>Enter your Lodge Name</label>
     <input type="text" id="lodge-input" placeholder="e.g. Sunset Lodge">
-    <div style="margin:14px 0; font-size:0.82rem; display:flex; align-items:flex-start; gap:8px;">
-      <input type="checkbox" id="lodge-terms-checkbox" style="margin-top:3px;">
-      <label for="lodge-terms-checkbox" style="font-weight:400; margin:0; color:var(--text2);">
-        Please enter your lodge name and read our
-        <a class="terms-link" href="#" target="_blank" rel="noopener" style="color:var(--accent); font-weight:700; text-decoration:underline;">Terms and Conditions</a>
-      </label>
+    <div style="margin:14px 0; font-size:0.82rem; color:var(--text2);">
+      Please enter your lodge name and read our
+      <a class="terms-link" href="#" target="_blank" rel="noopener" style="color:var(--accent); font-weight:700; text-decoration:underline;">Terms and Conditions</a>
     </div>
-    <button class="btn btn-primary" onclick="submitLodgeName()">I agree to terms - Continue →</button>
+    <button class="btn btn-primary" onclick="submitLodgeName()">Continue →</button>
     <button class="btn btn-secondary" onclick="goToPage2()">← Back</button>
   </div>
 </div>
@@ -786,7 +783,6 @@ async function goToPage3() {
 async function submitLodgeName() {
   const lodgeName = document.getElementById('lodge-input').value.trim();
   if (!lodgeName) { alert('Please enter your lodge name.'); return; }
-  if (!document.getElementById('lodge-terms-checkbox').checked) { alert('Please agree to the Terms and Conditions to continue.'); return; }
   showLoading('Saving...');
   try {
     await apiPost('/api/register-customer', { phone: currentPhone, site_name: currentSite, lodge_name: lodgeName });
