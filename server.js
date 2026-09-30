@@ -1467,7 +1467,7 @@ app.get('/api/admin/stats', verifyAdmin, async (req, res) => {
     let batchFrom = 0;
     const batchSize = 1000;
     while (true) {
-      let query = supabase.from('web_transactions').select('status, amount, site_name, phone')
+      let query = supabase.from('web_transactions').select('status, amount, site_name, phone, payment_provider')
         .range(batchFrom, batchFrom + batchSize - 1);
       if (from) query = query.gte('timestamp', from + 'T00:00:00');
       if (to) query = query.lte('timestamp', to + 'T23:59:59');
