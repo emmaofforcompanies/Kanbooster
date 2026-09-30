@@ -765,6 +765,7 @@ app.post('/api/flw-webhook', async (req, res) => {
       voucher_code: voucher,
       sent: 'delivered',
       flw_ref: flwRef,
+      payment_provider: 'Flutterwave',
       delivered_at: new Date().toISOString(),
     }).eq('payment_code', identifierCode);
 
@@ -821,6 +822,7 @@ app.post('/api/paystack-webhook', async (req, res) => {
       voucher_code: voucher,
       sent: 'delivered',
       flw_ref: pstkRef,
+      payment_provider: 'Paystack',
       delivered_at: new Date().toISOString(),
     }).eq('payment_code', identifierCode);
 
@@ -927,6 +929,7 @@ app.post('/api/verify-paystack', purchaseLimiter, async (req, res) => {
       status: 'completed',
       voucher_code: voucher,
       sent: 'delivered',
+      payment_provider: 'Paystack',
       delivered_at: new Date().toISOString(),
     }).eq('payment_code', identifierCode);
 
@@ -986,6 +989,7 @@ app.post('/api/verify-paystack', purchaseLimiter, async (req, res) => {
       status: 'completed',
       voucher_code: voucher,
       sent: 'delivered',
+      payment_provider: 'Flutterwave',
       delivered_at: new Date().toISOString(),
     }).eq('payment_code', identifierCode);
 
@@ -1149,6 +1153,7 @@ return res.json({ status: 'completed', voucher: txn.voucher_code, product_name: 
               voucher_code: voucher,
               sent: 'delivered',
               flw_ref: flwRef,
+              payment_provider: 'Flutterwave',
               delivered_at: new Date().toISOString(),
             }).eq('payment_code', identifierCode);
 
@@ -1281,6 +1286,7 @@ app.post('/api/retrieve-voucher', async (req, res) => {
               sent: 'delivered',
               delivery_method: 'web',
               flw_ref: ref,
+              payment_provider: ref && !ref.startsWith('FLW-') ? 'Paystack' : 'Flutterwave',
               delivered_at: new Date().toISOString(),
             }).eq('payment_code', txn.payment_code);
             if (!data) data = [];
