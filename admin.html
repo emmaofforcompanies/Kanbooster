@@ -205,6 +205,13 @@
           </div>
         </div>
         <div class="card">
+          <div class="card-title">💳 Sales by Payment Funnel</div>
+          <div class="table-wrap">
+            <table><thead><tr><th>Provider</th><th>Sales</th><th>Revenue</th></tr></thead>
+            <tbody id="dash-funnel-body"><tr><td colspan="3" style="color:var(--text2); text-align:center;">Select date range and click Load</td></tr></tbody></table>
+          </div>
+        </div>
+        <div class="card">
           <div class="card-title">🏨 Sales by Lodge Name</div>
           <div class="table-wrap">
             <table><thead><tr><th>Lodge</th><th>Site</th><th>Sales</th><th>Revenue</th></tr></thead>
@@ -866,8 +873,9 @@ async function loadDashboard() {
     if (!data) return;
 
     let revenue = 0, sales = 0, pending = 0, issues = 0;
-    const siteMap = {};
-    const lodgeMap = {};
+    const siteMap   = {};
+    const lodgeMap  = {};
+    const funnelMap = {};
 
     for (const t of data) {
       const amt = parseFloat(t.amount || 0);
@@ -878,9 +886,14 @@ async function loadDashboard() {
         const s = (t.site_name || 'unknown').toLowerCase();
         if (!siteMap[s]) siteMap[s] = { count: 0, revenue: 0 };
         siteMap[s].count++; siteMap[s].revenue += amt;
+
         const l = (t.lodge_name || '').toLowerCase() || '(no lodge)';
         if (!lodgeMap[l]) lodgeMap[l] = { lodge: t.lodge_name || '(No Lodge / Walk-in)', site: t.site_name, count: 0, revenue: 0 };
         lodgeMap[l].count++; lodgeMap[l].revenue += amt;
+
+        const p = t.payment_provider || 'Unknown';
+        if (!funnelMap[p]) funnelMap[p] = { count: 0, revenue: 0 };
+        funnelMap[p].count++; funnelMap[p].revenue += amt;
       }
       if (['pending','confirmed'].includes(t.status)) pending++;
       if (['underpaid','overpaid','out_of_stock'].includes(t.status)) issues++;
@@ -896,6 +909,17 @@ async function loadDashboard() {
       ? '<tr><td colspan="3" style="color:var(--text2); text-align:center;">No sales in this period</td></tr>'
       : Object.entries(siteMap).sort((a,b) => b[1].revenue - a[1].revenue)
           .map(([s, d]) => `<tr><td>${s}</td><td>${d.count}</td><td style="color:var(--success)">₦${d.revenue.toLocaleString()}</td></tr>`).join('');
+
+    const funnelIcons = { 'Flutterwave': '🟠', 'Paystack': '💚', 'Unknown': '❓' };
+    const funnelTbody = document.getElementById('dash-funnel-body');
+    funnelTbody.innerHTML = Object.entries(funnelMap).length === 0
+      ? '<tr><td colspan="3" style="color:var(--text2); text-align:center;">No data in this period</td></tr>'
+      : Object.entries(funnelMap).sort((a,b) => b[1].revenue - a[1].revenue)
+          .map(([p, d]) => `<tr>
+            <td>${funnelIcons[p] || '💳'} ${p}</td>
+            <td>${d.count}</td>
+            <td style="color:var(--success);">₦${d.revenue.toLocaleString()}</td>
+          </tr>`).join('');
 
     const lodgeTbody = document.getElementById('dash-lodge-body');
     lodgeTbody.innerHTML = Object.entries(lodgeMap).length === 0
@@ -1323,6 +1347,8 @@ async function loadSettings() {
       max_data_days: 'Delete transactions older than (days)',
       keep_recent: 'Keep last N days during cleanup',
       voucher_delivery_alert: 'Alert on voucher delivery (on/off)',
+      flutterwave_enabled: 'Show Flutterwave tab to customers (on/off)',
+      paystack_enabled: 'Show Paystack tab to customers (on/off)',
     };
 
     el.innerHTML = `<div class="settings-grid">` + data.map(s => `
