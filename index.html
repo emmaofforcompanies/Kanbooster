@@ -880,6 +880,9 @@ async function loadBankAccount(bankAccountPromise) {
     document.getElementById('bank-loading').style.display = 'none';
     document.getElementById('bank-details').style.display = 'block';
 
+    // Auto switch to Paystack if FLW is disabled
+    if (window._defaultPayTab === 'pstk') switchPaymentTab('pstk');
+
   } catch(e) {
     document.getElementById('bank-loading').style.display    = 'none';
     document.getElementById('bank-error-msg').textContent    = e.message || 'Could not generate payment account. Please try again.';
@@ -1340,13 +1343,25 @@ window.onload = async () => {
     document.getElementById('support-phone-display-2').textContent = phone;
     document.getElementById('support-phone-display-4').textContent = phone;
     document.getElementById('support-wait-mins').textContent = waitMins;
+    if (settings.terms_link) {
+      document.querySelectorAll('.terms-link').forEach(el => el.href = settings.terms_link);
+    }
+    
     if (settings.review_link) {
       document.getElementById('review-link').href = settings.review_link;
     }
-        if (settings.terms_link) {
-      document.querySelectorAll('.terms-link').forEach(el => el.href = settings.terms_link);
-    }
-        initTutorial();
+
+    // Payment provider visibility
+    const flwOn  = (settings.flutterwave_enabled || 'on') !== 'off';
+    const pstkOn = (settings.paystack_enabled    || 'on') !== 'off';
+    if (!flwOn)  document.getElementById('tab-btn-flw').style.display  = 'none';
+    if (!pstkOn) document.getElementById('tab-btn-pstk').style.display = 'none';
+
+    // If Flutterwave off, auto-switch to Paystack tab on page load
+    if (!flwOn && pstkOn) window._defaultPayTab = 'pstk';
+    else window._defaultPayTab = 'flw';
+
+    initTutorial();
   } catch(e) {}
   loadFaqs();
 };
