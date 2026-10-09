@@ -985,11 +985,16 @@ app.post('/api/verify-paystack', purchaseLimiter, async (req, res) => {
     }
 
     // Mark delivered
+    const providerHint = req.body.payment_provider;
+    const resolvedProvider = providerHint === 'Paystack' ? 'Paystack'
+      : providerHint === 'Flutterwave' ? 'Flutterwave'
+      : (flwRef && !flwRef.startsWith('66')) ? 'Flutterwave' : 'Paystack';
+
     await supabase.from('web_transactions').update({
       status: 'completed',
       voucher_code: voucher,
       sent: 'delivered',
-      payment_provider: 'Flutterwave',
+      payment_provider: resolvedProvider,
       delivered_at: new Date().toISOString(),
     }).eq('payment_code', identifierCode);
 
