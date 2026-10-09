@@ -955,6 +955,7 @@ async function checkPayment() {
           identifier_code: identifierCode,
           flw_ref: '',
           tx_ref: identifierCode,
+          payment_provider: activePaymentTab === 'pstk' ? 'Paystack' : 'Flutterwave',
         });
         if (deliver.success && deliver.voucher) {
           saveVoucherLocally(deliver.voucher);
